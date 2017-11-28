@@ -13,8 +13,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
+//! This module exposes its submodules' public APIs
+
 mod message;
 mod functions;
+pub mod discord;
 
 pub use self::message::{Message, MessageContent, FileMessage, FileKind};
-pub use self::functions::*;
+pub use self::functions::handle_forward;

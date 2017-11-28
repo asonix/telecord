@@ -1,7 +1,15 @@
 [package]
 name = "telecord"
+description = "A bot to join Telegram Chats to Discord Channels"
 version = "0.1.0"
+license = "GPL-3.0"
 authors = ["Riley Trautman <asonix@tamu.edu>"]
+repository = "https://github.com/asonix/telecord"
+readme = "README.md"
+keywords = ["telegram", "discord"]
+exclude = [
+    ".env"
+]
 
 [dependencies]
 dotenv = "0.10"

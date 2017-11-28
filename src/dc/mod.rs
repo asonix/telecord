@@ -13,10 +13,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
+//! This module exists to expose its submodules' APIs
+
 mod handler;
 mod message;
 mod functions;
+pub mod telegram;
 
 pub use self::handler::Handler;
 pub use self::message::{Message, MessageContent, FileMessage};
-pub use self::functions::*;
+pub use self::functions::forward_iter;

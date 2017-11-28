@@ -13,16 +13,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
+//! This module defines the intermediate Message type used to send messages to Telegram.
+
 use mime;
 use telebot::objects::Integer;
 
+/// Message is the outermost structure for the intermediate type.
 pub struct Message {
+    /// `from` represents the user that sent the original message
     pub from: String,
+    /// `chat_id` indicates which chat this message should be sent to
     pub chat_id: Integer,
+    /// `content` contains the body of the message
     pub content: MessageContent,
 }
 
 impl Message {
+    /// Create a new intermediate Message representation for sending Text
     pub fn text(user: String, chat_id: Integer, content: String) -> Self {
         Message {
             from: user,
@@ -31,6 +38,7 @@ impl Message {
         }
     }
 
+    /// Create a new intermediate Message representation for sending any kind of File
     pub fn file(
         user: String,
         chat_id: Integer,
@@ -52,18 +60,27 @@ impl Message {
     }
 }
 
+/// Defines the content of a message
 pub enum MessageContent {
     Text(String),
     File(FileMessage),
 }
 
+/// Defines the content of a Message with an attached File.
 pub struct FileMessage {
+    /// An optional caption for the sent file
     pub caption: Option<String>,
+    /// The name of the sent file
     pub filename: String,
+    /// The contents of the sent file
     pub contents: Vec<u8>,
+    /// The kind of the sent file
     pub kind: FileKind,
 }
 
+/// All reasonable kinds of files. The `FileKind::Unknown` variant is used for any kind of file
+/// that does not fit into the categories of Image, Video, or Audio and will be sent as a Document
+/// to telegram.
 pub enum FileKind {
     Image,
     Video,

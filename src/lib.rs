@@ -13,6 +13,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
+//! This is the library for Telebot.
+//!
+//! It may not be incredibly useful outside the context of the associated main.rs
+
 #![feature(conservative_impl_trait)]
 
 extern crate dotenv;

@@ -13,12 +13,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
+//! The config module exists to expose the Config type
+
 use std::collections::HashMap;
 use std::env;
 use dotenv::dotenv;
 use telebot::objects::Integer;
 use serenity::model::ChannelId;
 
+/// The Config type contains four values, the Discord Bot's Token, the Telegram Bot's token, a
+/// HashMap for quickly getting a Telegram Chat ID from a Discord Channel ID, and a HashMap for
+/// quickly getting a Discord Channel ID from a Telegram Chat ID.
 #[derive(Debug, Clone)]
 pub struct Config {
     discord_token: String,
@@ -28,6 +33,22 @@ pub struct Config {
 }
 
 impl Config {
+    /// The new function is what actually accesses the environment to read in the required values.
+    ///
+    /// The `CHAT_MAPPINGS` environment variable is read as a comma-separated list of
+    /// colon-separated tuples, where the first element of each tuple is a Telegram Chat ID and the
+    /// second argument of each tuple is a Discord Channel ID.
+    ///
+    /// For example, `CHAT_MAPPINGS=1234:abcd,5678:efgh` would map the Telegram Chat 1234 to the
+    /// Discord Channel abcd and would also map the Telegram Chat 5678 to the Discord Channel efgh.
+    ///
+    /// The `DISCORD_BOT_TOKEN` and `TELEGRAM_BOT_TOKEN` environment variables are
+    /// self-explanatory.
+    ///
+    /// If any of the required environment variables are not set, this function will panic. Since
+    /// this is intended to be the first function an application runs, this should not cause
+    /// issues. Either the config will be correct, or the application will not attempt to deal with
+    /// missing configuration options.
     pub fn new() -> Self {
         dotenv().ok();
 
@@ -75,20 +96,24 @@ impl Config {
         }
     }
 
+    /// Returns the Discord Bot Token
     pub fn discord(&self) -> &str {
         &self.discord_token
     }
 
+    /// Returns the Telegram Bot Token
     pub fn telegram(&self) -> &str {
         &self.telegram_token
     }
 
+    /// Retrieves the Telegram Chat ID that corresponds to the given Discord Channel ID.
     pub fn telegram_chat_id(&self, discord_channel_id: &ChannelId) -> Option<Integer> {
         self.discord_to_telegram.get(discord_channel_id).map(|i| {
             i.clone()
         })
     }
 
+    /// Retrieves the Discord Channel ID that corresponds to the given Telegram Chat ID.
     pub fn discord_channel_id(&self, telegram_chat_id: &Integer) -> Option<ChannelId> {
         self.telegram_to_discord.get(telegram_chat_id).map(
             |i| i.clone(),
