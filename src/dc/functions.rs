@@ -83,12 +83,10 @@ fn get_file_id(message: objects::Message) -> Option<String> {
         Some(audio.file_id)
     } else if let Some(document) = message.document {
         Some(document.file_id)
-    } else if let Some(photo) = message.photo {
-        if !photo.is_empty() {
-            Some(photo[0].file_id.clone())
-        } else {
-            None
-        }
+    } else if let Some(photos) = message.photo {
+        photos.iter().max_by_key(|photo| photo.width).map(|photo| {
+            photo.file_id.clone()
+        })
     } else if let Some(sticker) = message.sticker {
         Some(sticker.file_id)
     } else if let Some(voice) = message.voice {
@@ -238,7 +236,7 @@ fn send_file(channel_id: ChannelId, user: String, file_msg: FileMessage) {
         let msg = if let Some(caption) = caption {
             format!("**{}**: {}", user, caption)
         } else {
-            format!("**{}**: {}", user, "__sent a file__")
+            format!("**{}**: {}", user, "*sent a file*")
         };
 
         create_message.content(msg)
