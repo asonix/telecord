@@ -13,40 +13,37 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
-use mime;
-use telebot::objects::Integer;
+use serenity::model::ChannelId;
 
 pub struct Message {
     pub from: String,
-    pub chat_id: Integer,
+    pub channel_id: ChannelId,
     pub content: MessageContent,
 }
 
 impl Message {
-    pub fn text(user: String, chat_id: Integer, content: String) -> Self {
+    pub fn text(user: String, channel_id: ChannelId, content: String) -> Self {
         Message {
             from: user,
-            chat_id: chat_id,
+            channel_id: channel_id,
             content: MessageContent::Text(content),
         }
     }
 
     pub fn file(
         user: String,
-        chat_id: Integer,
+        channel_id: ChannelId,
         caption: Option<String>,
         filename: String,
         contents: Vec<u8>,
-        kind: FileKind,
     ) -> Self {
         Message {
             from: user,
-            chat_id: chat_id,
+            channel_id: channel_id,
             content: MessageContent::File(FileMessage {
                 caption,
                 filename,
                 contents,
-                kind,
             }),
         }
     }
@@ -61,35 +58,4 @@ pub struct FileMessage {
     pub caption: Option<String>,
     pub filename: String,
     pub contents: Vec<u8>,
-    pub kind: FileKind,
-}
-
-pub enum FileKind {
-    Image,
-    Video,
-    Audio,
-    Unknown,
-}
-
-impl From<mime::Mime> for FileKind {
-    fn from(mime: mime::Mime) -> Self {
-        match mime.type_() {
-            mime::IMAGE => {
-                println!("IMAGE");
-                FileKind::Image
-            }
-            mime::VIDEO => {
-                println!("VIDEO");
-                FileKind::Video
-            }
-            mime::AUDIO => {
-                println!("AUDIO");
-                FileKind::Audio
-            }
-            unknown => {
-                println!("UNKNOWN TYPE: {}", unknown);
-                FileKind::Unknown
-            }
-        }
-    }
 }

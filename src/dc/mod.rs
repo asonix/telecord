@@ -14,5 +14,9 @@
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
 mod handler;
+mod message;
+mod functions;
 
 pub use self::handler::Handler;
+pub use self::message::{Message, MessageContent, FileMessage};
+pub use self::functions::*;

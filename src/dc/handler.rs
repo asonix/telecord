@@ -15,27 +15,31 @@
 
 use serenity::model;
 use serenity::prelude::*;
+use telebot::objects::Integer;
 use futures::sync::mpsc::Sender;
 use futures::{Future, Sink};
 use mime_sniffer::MimeTypeSniffer;
 use mime;
 
 use tg;
+use config::Config;
 
 pub struct Handler {
+    config: Config,
     tg_sender: Sender<tg::Message>,
 }
 
 impl Handler {
-    pub fn new(tg_sender: Sender<tg::Message>) -> Self {
-        Handler { tg_sender }
+    pub fn new(config: Config, tg_sender: Sender<tg::Message>) -> Self {
+        Handler { config, tg_sender }
     }
 
-    fn no_attachments(&self, message: model::Message) {
+    fn no_attachments(&self, chat_id: Integer, message: model::Message) {
         if let Err(e) = self.tg_sender
             .clone()
             .send(tg::Message::text(
                 message.author.name.clone(),
+                chat_id,
                 message.content.clone(),
             ))
             .wait()
@@ -44,7 +48,7 @@ impl Handler {
         }
     }
 
-    fn has_attachments(&self, message: model::Message) {
+    fn has_attachments(&self, chat_id: Integer, message: model::Message) {
         let content = if message.content.is_empty() {
             None
         } else {
@@ -61,6 +65,7 @@ impl Handler {
                             .clone()
                             .send(tg::Message::file(
                                 message.author.name.clone(),
+                                chat_id,
                                 content.clone(),
                                 attachment.filename,
                                 bytes,
@@ -77,12 +82,26 @@ impl Handler {
     }
 
     fn regular_message(&self, _: Context, message: model::Message) {
-        println!("content: {}", message.content);
+        println!(
+            "content: {},\nchannel: {}",
+            message.content,
+            message.channel_id
+        );
+
+        let chat_id = if let Some(chat_id) = self.config.telegram_chat_id(&message.channel_id) {
+            chat_id
+        } else {
+            return;
+        };
+
+        if message.author.bot {
+            return;
+        }
 
         if message.attachments.is_empty() {
-            self.no_attachments(message);
+            self.no_attachments(chat_id, message);
         } else {
-            self.has_attachments(message);
+            self.has_attachments(chat_id, message);
         }
     }
 

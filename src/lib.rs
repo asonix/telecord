@@ -13,12 +13,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
+#![feature(conservative_impl_trait)]
+
 extern crate dotenv;
 extern crate telebot;
 extern crate serenity;
 extern crate futures;
 extern crate mime;
 extern crate mime_sniffer;
+extern crate tokio_curl;
+extern crate curl;
 
 mod config;
 pub mod tg;

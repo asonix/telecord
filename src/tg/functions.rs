@@ -17,15 +17,15 @@ use telebot::bot::RcBot;
 use telebot::file::File;
 use telebot::functions::{FunctionMessage, FunctionSendAudio, FunctionSendDocument,
                          FunctionSendPhoto, FunctionSendVideo};
+use telebot::objects::Integer;
 use futures::Future;
 use std::io::Cursor;
 
-use config::Config;
-use super::{FileKind, FileMessage};
+use super::{FileKind, FileMessage, Message, MessageContent};
 
-fn send_image(bot: RcBot, config: &Config, image: File, caption: String) {
+fn send_image(bot: RcBot, chat_id: Integer, image: File, caption: String) {
     bot.inner.handle.spawn({
-        bot.photo(config.telegram_chat_id())
+        bot.photo(chat_id)
             .file(image)
             .caption(caption)
             .send()
@@ -36,9 +36,9 @@ fn send_image(bot: RcBot, config: &Config, image: File, caption: String) {
     });
 }
 
-fn send_audio(bot: RcBot, config: &Config, audio: File, caption: String) {
+fn send_audio(bot: RcBot, chat_id: Integer, audio: File, caption: String) {
     bot.inner.handle.spawn({
-        bot.audio(config.telegram_chat_id())
+        bot.audio(chat_id)
             .file(audio)
             .caption(caption)
             .send()
@@ -49,9 +49,9 @@ fn send_audio(bot: RcBot, config: &Config, audio: File, caption: String) {
     });
 }
 
-fn send_video(bot: RcBot, config: &Config, video: File, caption: String) {
+fn send_video(bot: RcBot, chat_id: Integer, video: File, caption: String) {
     bot.inner.handle.spawn({
-        bot.video(config.telegram_chat_id())
+        bot.video(chat_id)
             .file(video)
             .caption(caption)
             .send()
@@ -62,9 +62,9 @@ fn send_video(bot: RcBot, config: &Config, video: File, caption: String) {
     });
 }
 
-fn send_document(bot: RcBot, config: &Config, document: File, caption: String) {
+fn send_document(bot: RcBot, chat_id: Integer, document: File, caption: String) {
     bot.inner.handle.spawn({
-        bot.document(config.telegram_chat_id())
+        bot.document(chat_id)
             .file(document)
             .caption(caption)
             .send()
@@ -75,9 +75,9 @@ fn send_document(bot: RcBot, config: &Config, document: File, caption: String) {
     });
 }
 
-pub fn send_text(bot: RcBot, config: &Config, user: String, content: String) {
+fn send_text(bot: RcBot, user: String, chat_id: Integer, content: String) {
     bot.inner.handle.spawn(
-        bot.message(config.telegram_chat_id(), {
+        bot.message(chat_id, {
             let escaped_content = content.replace("&", "&amp;").replace(">", "&gt;").replace(
                 "<",
                 "&lt;",
@@ -94,7 +94,7 @@ pub fn send_text(bot: RcBot, config: &Config, user: String, content: String) {
     );
 }
 
-pub fn send_file(bot: RcBot, config: &Config, user: String, file_msg: FileMessage) {
+fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) {
     let FileMessage {
         caption,
         filename,
@@ -114,16 +114,30 @@ pub fn send_file(bot: RcBot, config: &Config, user: String, file_msg: FileMessag
 
     match kind {
         FileKind::Image => {
-            send_image(bot, config, file, caption);
+            send_image(bot, chat_id, file, caption);
         }
         FileKind::Audio => {
-            send_audio(bot, config, file, caption);
+            send_audio(bot, chat_id, file, caption);
         }
         FileKind::Video => {
-            send_video(bot, config, file, caption);
+            send_video(bot, chat_id, file, caption);
         }
         FileKind::Unknown => {
-            send_document(bot, config, file, caption);
+            send_document(bot, chat_id, file, caption);
+        }
+    }
+}
+
+pub fn handle_message(bot: RcBot, message: Message) {
+    let user = message.from;
+    let chat_id = message.chat_id;
+
+    match message.content {
+        MessageContent::Text(content) => {
+            send_text(bot, user, chat_id, content);
+        }
+        MessageContent::File(file) => {
+            send_file(bot, user, chat_id, file);
         }
     }
 }

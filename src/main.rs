@@ -20,17 +20,14 @@ extern crate futures;
 
 extern crate telecord;
 
-// #[macro_use]
-// extern crate lazy_static;
-
-// use tokio_core::reactor::{Core, Handle};
 use serenity::prelude::*;
 use tokio_core::reactor::Core;
 use futures::sync::mpsc::channel;
-use futures::Stream;
+use futures::{IntoFuture, Stream};
 use telebot::bot;
 use telebot::functions::*;
 use std::thread;
+use std::sync;
 
 use telecord::{Config, tg, dc};
 
@@ -39,42 +36,58 @@ fn main() {
 
     let (tg_sender, tg_receiver) = channel::<tg::Message>(100);
 
-    let mut discord_bot = Client::new(config.discord(), dc::Handler::new(tg_sender));
+    let mut discord_bot = Client::new(
+        config.discord(),
+        dc::Handler::new(config.clone(), tg_sender),
+    );
+
+    let (dc_sender, dc_receiver) = sync::mpsc::channel::<dc::Message>();
 
     let closure_config = config.clone();
+
+    let dc_thread = thread::spawn(move || dc::message_iter(dc_receiver));
 
     let tg_thread = thread::spawn(move || {
         let mut lp = Core::new().unwrap();
         let telegram_bot = bot::RcBot::new(lp.handle(), config.telegram()).update_interval(200);
         let closure_bot = telegram_bot.clone();
+        let closure_bot2 = telegram_bot.clone();
 
         telegram_bot.inner.handle.spawn(tg_receiver.for_each(
             move |tg_message| {
-                let user = tg_message.from;
-
-                match tg_message.content {
-                    tg::MessageContent::Text(content) => {
-                        tg::send_text(closure_bot.clone(), &closure_config, user, content);
-                    }
-                    tg::MessageContent::File(file) => {
-                        tg::send_file(closure_bot.clone(), &closure_config, user, file);
-                    }
-                }
+                tg::handle_message(closure_bot.clone(), tg_message);
 
                 Ok(())
             },
         ));
 
-        let cmd = telegram_bot.new_cmd("/ping").and_then(|(bot, msg)| {
+        telegram_bot.register(telegram_bot.new_cmd("/ping").and_then(|(bot, msg)| {
             bot.message(msg.chat.id, "pong".into()).send()
+        }));
+
+        telegram_bot.register(telegram_bot.new_cmd("/chat_id").and_then(|(bot, msg)| {
+            bot.message(msg.chat.id, format!("{}", msg.chat.id)).send()
+        }));
+
+        let stream = telegram_bot.get_stream().filter_map(|(bot, update)| {
+            if let Some(msg) = update.message {
+                dc::handle_tg_message(
+                    closure_bot2.clone(),
+                    closure_config.clone(),
+                    msg,
+                    dc_sender.clone(),
+                );
+                None
+            } else {
+                Some((bot, update))
+            }
         });
 
-        telegram_bot.register(cmd);
-
-        telegram_bot.run(&mut lp)
+        lp.run(stream.for_each(|_| Ok(())).into_future()).unwrap();
     });
 
     let _ = discord_bot.start();
 
     let _ = tg_thread.join();
+    let _ = dc_thread.join();
 }
