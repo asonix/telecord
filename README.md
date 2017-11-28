@@ -7,8 +7,7 @@ This is a Work In Progress bot to translate Discord messages to Telegram Message
 ### Current Status
 - Sends text from Discord to Telegram
 - Doesn't send media from Discord to Telegram
-- Sends text from Telegram to Discord
-- Doesn't send media from Telegram to Discord
+- Sends text and media from Telegram to Discord (TODO: compressed images get REALLY SMALL)
 
 ### License
 

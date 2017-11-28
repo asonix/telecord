@@ -55,11 +55,12 @@ pub fn handle_tg_message(
 
     let caption = message.caption.clone();
     let text = message.text.clone();
+    let sticker = message.sticker.is_some();
 
     let file_id = get_file_id(message);
 
     if let Some(file_id) = file_id {
-        send_tg_file(bot, sender, channel_id, user, file_id, caption);
+        send_tg_file(bot, sender, channel_id, user, file_id, caption, sticker);
     } else if let Some(text) = text {
         send_tg_text(sender, channel_id, user, text);
     } else {
@@ -104,6 +105,7 @@ fn send_tg_file(
     user: String,
     file_id: String,
     caption: Option<String>,
+    sticker: bool,
 ) {
     println!("send_tg_file");
     bot.inner.handle.spawn(
@@ -122,6 +124,11 @@ fn send_tg_file(
                 Err(())
             })
             .and_then(move |(bot, file)| if let Some(path) = file.file_path {
+                let path = format!(
+                    "https://api.telegram.org/file/bot{}/{}",
+                    bot.inner.key,
+                    path
+                );
                 let url = Path::new(&path);
                 let filename = url.file_name();
 
@@ -139,6 +146,11 @@ fn send_tg_file(
             })
             .and_then(move |(bot, path, filename)| {
                 download_file(bot.clone(), &path).and_then(move |response| {
+                    let filename = if sticker {
+                        format!("{}.webp", filename)
+                    } else {
+                        filename
+                    };
 
                     let res =
                         sender.send(Message::file(user, channel_id, caption, filename, response));
@@ -157,6 +169,7 @@ fn download_file(bot: RcBot, url: &str) -> impl Future<Item = Vec<u8>, Error = (
     let session = Session::new(bot.inner.handle.clone());
     let mut req = Easy::new();
     req.get(true).unwrap();
+    println!("url: {}", url);
     req.url(url).unwrap();
     let result = Arc::new(Mutex::new(Vec::new()));
 
