@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Telecord  If not, see <http://www.gnu.org/licenses/>.
 
-//! This module exposes its submodules' public APIs
+//! This module contains types and functions related to Telegram and Telebot
 
 mod message;
 mod functions;
