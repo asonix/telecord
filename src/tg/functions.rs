@@ -117,14 +117,16 @@ fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) 
     } = file_msg;
 
     println!("filename: {}", filename);
-    let tup: (&str, Cursor<Vec<u8>>) = (&filename, Cursor::new(contents));
-    let file: File = File::from(tup);
 
     let caption = if let Some(caption) = caption {
         format!("*{}*: {}", user, caption)
     } else {
         format!("*{}*: {}", user, "__sent a file__")
     };
+
+    println!("File len: {}", contents.len());
+
+    let file = (filename.as_ref(), Cursor::new(contents));
 
     match kind {
         FileKind::Image => {
@@ -143,10 +145,13 @@ fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) 
 }
 
 // Sends an Image to Telegram
-fn send_image(bot: RcBot, chat_id: Integer, image: File, caption: String) {
+fn send_image<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+where
+    T: Into<File>,
+{
     bot.inner.handle.spawn({
         bot.photo(chat_id)
-            .file(image)
+            .file(file)
             .caption(caption)
             .send()
             .map(|_| ())
@@ -157,10 +162,13 @@ fn send_image(bot: RcBot, chat_id: Integer, image: File, caption: String) {
 }
 
 // Sends Audio to Telegram
-fn send_audio(bot: RcBot, chat_id: Integer, audio: File, caption: String) {
+fn send_audio<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+where
+    T: Into<File>,
+{
     bot.inner.handle.spawn({
         bot.audio(chat_id)
-            .file(audio)
+            .file(file)
             .caption(caption)
             .send()
             .map(|_| ())
@@ -171,10 +179,13 @@ fn send_audio(bot: RcBot, chat_id: Integer, audio: File, caption: String) {
 }
 
 // Sends a Video to Telegram
-fn send_video(bot: RcBot, chat_id: Integer, video: File, caption: String) {
+fn send_video<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+where
+    T: Into<File>,
+{
     bot.inner.handle.spawn({
         bot.video(chat_id)
-            .file(video)
+            .file(file)
             .caption(caption)
             .send()
             .map(|_| ())
@@ -185,10 +196,13 @@ fn send_video(bot: RcBot, chat_id: Integer, video: File, caption: String) {
 }
 
 // Sends a Document to Telegram
-fn send_document(bot: RcBot, chat_id: Integer, document: File, caption: String) {
+fn send_document<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+where
+    T: Into<File>,
+{
     bot.inner.handle.spawn({
         bot.document(chat_id)
-            .file(document)
+            .file(file)
             .caption(caption)
             .send()
             .map(|_| ())

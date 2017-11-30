@@ -7,17 +7,14 @@ authors = ["Riley Trautman <asonix@tamu.edu>"]
 repository = "https://github.com/asonix/telecord"
 readme = "README.md"
 keywords = ["telegram", "discord"]
-exclude = [
-    ".env"
-]
 
 [dependencies]
 dotenv = "0.10"
 serenity = "0.4.3"
 mime = "0.3"
 mime-sniffer = "0.1"
-telebot = "0.2.3"
+telebot = { path = "../telebot" }
 tokio-core = "0.1"
 futures = "0.1"
-tokio-curl = "0.1.10"
-curl = "0.4.8"
+tokio-curl = "0.1"
+curl = "0.4"

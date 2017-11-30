@@ -86,28 +86,33 @@ fn has_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model
 
     for attachment in message.attachments {
         // Download each attachment and send it to the Telegram Bot as a new intermediate message
+        println!("Attachment");
         if let Ok(bytes) = attachment.download() {
-            let mtype_opt: Option<String> = bytes.sniff_mime_type().map(|s| String::from(s));
+            println!("Bytes");
+            let mtype_opt: Option<String> = bytes.sniff_mime_type().map(|s| s.into());
 
-            if let Some(mtype_str) = mtype_opt {
-                if let Ok(mtype) = mtype_str.parse::<mime::Mime>() {
-                    // If the mime type sniffed from the downloaded file exists (it should), send
-                    // the message
-                    if let Err(e) = sender
-                        .clone()
-                        .send(tg::Message::file(
-                            message.author.name.clone(),
-                            chat_id,
-                            content.clone(),
-                            attachment.filename,
-                            bytes,
-                            mtype.into(),
-                        ))
-                        .wait()
-                    {
-                        println!("Failed to send because {}", e);
-                    }
-                }
+            let mtype = if let Some(mtype) = mtype_opt {
+                mtype
+            } else {
+                "application/octet-stream".into()
+            };
+
+            let mtype = mtype.parse::<mime::Mime>().unwrap();
+            // If the mime type sniffed from the downloaded file exists (it should), send
+            // the message
+            if let Err(e) = sender
+                .clone()
+                .send(tg::Message::file(
+                    message.author.name.clone(),
+                    chat_id,
+                    content.clone(),
+                    attachment.filename,
+                    bytes,
+                    mtype.into(),
+                ))
+                .wait()
+            {
+                println!("Failed to send because {}", e);
             }
         }
     }
