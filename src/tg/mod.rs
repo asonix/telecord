@@ -17,6 +17,7 @@
 
 mod message;
 mod functions;
+mod download;
 pub mod discord;
 
 pub use self::message::{Message, MessageContent, FileMessage, FileKind};

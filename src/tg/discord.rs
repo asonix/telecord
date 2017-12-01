@@ -18,7 +18,6 @@
 //! It doesn't handle the actual sending of messages, but instead offloads an intermediate message
 //! construct through an mpsc::channel to (possibly) another thread.
 
-use std::path::Path;
 use std::sync::mpsc::Sender;
 use telebot::objects;
 use telebot::RcBot;
@@ -27,7 +26,7 @@ use serenity::model::ChannelId;
 use futures::Future;
 
 use dc;
-use super::functions::download_file;
+use super::download::download_file;
 use config::Config;
 
 /// As the only public funtion in the module, handle_message dictates the flow for sending messages
@@ -124,70 +123,29 @@ fn send_file(
         bot.get_file(file_id)
             .send()
             .map_err(|e| println!("Failed: {:?}", e))
-            .and_then(move |(bot, file)| {
-                // If the file_size exists and is less than 8 * 10^6 bytes, continue, else take the
-                // error path.
-                if let Some(file_size) = file.file_size {
-                    println!("file_size: {}", file_size);
-
-                    if file_size < 8 * 1000 * 1000 {
-                        Ok((bot, file))
-                    } else {
-                        Err(())
-                    }
-                } else {
-                    Err(())
-                }
+            .and_then(|(bot, file)| {
+                download_file(bot, file).map_err(|e| println!("Error: {}", e))
             })
-            .and_then(move |(bot, file)| {
-                // If the file_path exists, get the filename from it and continue, else take the
-                // error path.
-                if let Some(path) = file.file_path {
-                    let path = format!(
-                        "https://api.telegram.org/file/bot{}/{}",
-                        bot.inner.key,
-                        path
-                    );
-                    let url = Path::new(&path);
-                    let filename = url.file_name();
-
-                    if let Some(filename) = filename {
-                        if let Some(filename) = filename.to_str() {
-                            Ok((bot, path.clone(), String::from(filename)))
-                        } else {
-                            Err(())
-                        }
-                    } else {
-                        Err(())
-                    }
+            .and_then(move |(response, filename)| {
+                let filename = if sticker {
+                    format!("{}.webp", filename)
                 } else {
-                    Err(())
+                    filename
+                };
+
+                let res = sender.send(dc::Message::file(
+                    user,
+                    channel_id,
+                    caption,
+                    filename,
+                    response,
+                ));
+
+                match res {
+                    Ok(_) => (),
+                    Err(e) => println!("Failed to send file: {}", e),
                 }
-            })
-            .and_then(move |(bot, path, filename)| {
-                // Download the file and send the result as an intermediate message representation
-                // to the Discord Bot.
-                download_file(bot.clone(), &path).and_then(move |response| {
-                    let filename = if sticker {
-                        format!("{}.webp", filename)
-                    } else {
-                        filename
-                    };
-
-                    let res = sender.send(dc::Message::file(
-                        user,
-                        channel_id,
-                        caption,
-                        filename,
-                        response,
-                    ));
-
-                    match res {
-                        Ok(_) => (),
-                        Err(e) => println!("Failed to send file: {}", e),
-                    }
-                    Ok(())
-                })
+                Ok(())
             }),
     );
 }

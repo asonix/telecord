@@ -15,8 +15,7 @@
 
 //! This module defines functions associated with Telegram and Telebot. Specifically, it defines
 //! the functionality for handling an incoming intermediate Message construct and translating that
-//! into a legitimate telegram message. It also includes logic for downloading files from Telegram,
-//! since the Telebot library does not.
+//! into a legitimate telegram message.
 
 use telebot::bot::RcBot;
 use telebot::file::File;
@@ -24,51 +23,9 @@ use telebot::functions::{FunctionMessage, FunctionSendAudio, FunctionSendDocumen
                          FunctionSendPhoto, FunctionSendVideo};
 use telebot::objects::Integer;
 use futures::Future;
-use tokio_curl::Session;
-use curl::easy::Easy;
-use std::sync::{Arc, Mutex};
 use std::io::Cursor;
 
 use super::{FileKind, FileMessage, Message, MessageContent};
-
-/// Download a file given a URL. This is designed to work on the Tokio threadpool used by Telebot.
-/// This function will return a failed future if the response code is not in the range 200 to 299
-/// inclusive.
-pub fn download_file(bot: RcBot, url: &str) -> impl Future<Item = Vec<u8>, Error = ()> {
-    // Create a tokio-curl session on the bot's event loop
-    let session = Session::new(bot.inner.handle.clone());
-
-    // Create a new request
-    let mut req = Easy::new();
-    req.get(true).unwrap();
-    println!("url: {}", url);
-    req.url(url).unwrap();
-
-    // Define the callback function for the curl request. Here we use an Arc<Mutex<Vec<u8>>> in
-    // order to share this vector between the curl callback and the response callback. This is the
-    // same logic used by the Telebot crate to fetch data from Telegram (11/28/17)..
-    let result = Arc::new(Mutex::new(Vec::new()));
-    let r2 = result.clone();
-    req.write_function(move |data| {
-        r2.lock().unwrap().extend_from_slice(data);
-        Ok(data.len())
-    }).unwrap();
-
-    // Create a future perform the request and then take the error path if the response code is not
-    // between 200 and 299 inclusive
-    session
-        .perform(req)
-        .map_err(|e| println!("Error getting file: {}", e))
-        .and_then(move |mut res| if let Ok(code) = res.response_code() {
-            if 200 <= code && code < 300 {
-                Ok(result.lock().unwrap().to_vec())
-            } else {
-                Err(())
-            }
-        } else {
-            Err(())
-        })
-}
 
 /// Given an intermediate Message type, send a legitimate message to Telegram.
 pub fn handle_forward(bot: RcBot, message: Message) {

@@ -94,9 +94,13 @@ fn has_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model
             let mtype = if let Some(mtype) = mtype_opt {
                 mtype
             } else {
-                "application/octet-stream".into()
+                mime::APPLICATION_OCTET_STREAM.as_ref().into()
             };
 
+            // This unwrap is safe since the mtype is ensured to have come from a Mimetype to begin
+            // with. The reason for this Mime -> String -> Mime conversion is the mime-sniffer
+            // package uses and outdated mime package and telecord depends on a current mime
+            // package.
             let mtype = mtype.parse::<mime::Mime>().unwrap();
             // If the mime type sniffed from the downloaded file exists (it should), send
             // the message
