@@ -51,6 +51,10 @@ extern crate telebot;
 extern crate tokio_core;
 extern crate futures;
 
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+
 extern crate telecord;
 
 use serenity::prelude::*;
@@ -65,6 +69,8 @@ use std::sync;
 use telecord::{Config, tg, dc};
 
 fn main() {
+    env_logger::init().unwrap();
+    info!("Starting up!");
     let config = Config::new();
 
     let (tg_sender, tg_receiver) = channel::<tg::Message>(100);

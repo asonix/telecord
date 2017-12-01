@@ -33,8 +33,8 @@ use config::Config;
 /// the message came from, and then offloads to no_attachments and has_attachments depending on
 /// whether files are attached.
 pub fn regular_message(config: &Config, sender: Sender<tg::Message>, message: model::Message) {
-    println!(
-        "content: {},\nchannel: {}",
+    debug!(
+        "content: {}, channel: {}",
         message.content,
         message.channel_id
     );
@@ -59,7 +59,7 @@ pub fn regular_message(config: &Config, sender: Sender<tg::Message>, message: mo
 
 /// Join Messages occur when a user joins a Discord channel. This function is currently a stub.
 pub fn join_message(message: model::Message) {
-    println!("{} joined!", message.content);
+    debug!("{} joined!", message.content);
 }
 
 // Builds a text message representation and sends it to the Telegram bot.
@@ -72,7 +72,7 @@ fn no_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model:
         ))
         .wait()
     {
-        println!("Failed to send text because {}", e);
+        debug!("Failed to send text because {}", e);
     }
 }
 
@@ -86,9 +86,7 @@ fn has_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model
 
     for attachment in message.attachments {
         // Download each attachment and send it to the Telegram Bot as a new intermediate message
-        println!("Attachment");
         if let Ok(bytes) = attachment.download() {
-            println!("Bytes");
             let mtype_opt: Option<String> = bytes.sniff_mime_type().map(|s| s.into());
 
             let mtype = if let Some(mtype) = mtype_opt {
@@ -116,7 +114,7 @@ fn has_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model
                 ))
                 .wait()
             {
-                println!("Failed to send because {}", e);
+                debug!("Failed to send because {}", e);
             }
         }
     }

@@ -44,15 +44,14 @@ pub fn handle_message(
     message: objects::Message,
     sender: Sender<dc::Message>,
 ) {
-    println!("handle_message");
     let user = if let Some(ref user) = message.from {
         get_user_name(user)
     } else {
         return;
     };
 
-    println!("user: {}", user);
-    println!("chat id: {}", &message.chat.id);
+    debug!("user: {}", user);
+    debug!("chat id: {}", &message.chat.id);
 
     let channel_id = config.discord_channel_id(&message.chat.id);
     let channel_id = if let Some(channel_id) = channel_id {
@@ -61,7 +60,7 @@ pub fn handle_message(
         return;
     };
 
-    println!("channel_id: {}", channel_id);
+    debug!("channel_id: {}", channel_id);
 
     let caption = message.caption.clone();
     let text = message.text.clone();
@@ -74,7 +73,7 @@ pub fn handle_message(
     } else if let Some(text) = text {
         send_text(sender, channel_id, user, text);
     } else {
-        println!("Not sending message");
+        debug!("Not sending message");
     }
 }
 
@@ -118,13 +117,12 @@ fn send_file(
     caption: Option<String>,
     sticker: bool,
 ) {
-    println!("send_file");
     bot.inner.handle.spawn(
         bot.get_file(file_id)
             .send()
-            .map_err(|e| println!("Failed: {:?}", e))
+            .map_err(|e| debug!("Failed: {:?}", e))
             .and_then(|(bot, file)| {
-                download_file(bot, file).map_err(|e| println!("Error: {}", e))
+                download_file(bot, file).map_err(|e| debug!("Error: {}", e))
             })
             .and_then(move |(response, filename)| {
                 let filename = if sticker {
@@ -143,7 +141,7 @@ fn send_file(
 
                 match res {
                     Ok(_) => (),
-                    Err(e) => println!("Failed to send file: {}", e),
+                    Err(e) => debug!("Failed to send file: {}", e),
                 }
                 Ok(())
             }),
@@ -152,11 +150,10 @@ fn send_file(
 
 // Send text to Telegram
 fn send_text(sender: Sender<dc::Message>, channel_id: ChannelId, user: String, text: String) {
-    println!("send_text");
     let res = sender.send(dc::Message::text(user, channel_id, text));
 
     match res {
         Ok(_) => (),
-        Err(e) => println!("Failed to send text: {}", e),
+        Err(e) => debug!("Failed to send text: {}", e),
     }
 }

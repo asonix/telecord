@@ -28,6 +28,9 @@ extern crate mime_sniffer;
 extern crate tokio_curl;
 extern crate curl;
 
+#[macro_use]
+extern crate log;
+
 mod config;
 pub mod tg;
 pub mod dc;

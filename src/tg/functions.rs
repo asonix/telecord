@@ -52,13 +52,13 @@ fn send_text(bot: RcBot, user: String, chat_id: Integer, content: String) {
                 "&lt;",
             );
             let output = format!("<b>{}</b>: {}", user, escaped_content);
-            println!("{}", output);
+            debug!("{}", output);
             output
         }).parse_mode("HTML")
             .send()
             .map(|_| ())
             .map_err(|err| {
-                println!("Error: {:?}", err);
+                debug!("Error: {:?}", err);
             }),
     );
 }
@@ -73,7 +73,7 @@ fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) 
         kind,
     } = file_msg;
 
-    println!("filename: {}", filename);
+    debug!("filename: {}", filename);
 
     let caption = if let Some(caption) = caption {
         format!("*{}*: {}", user, caption)
@@ -81,7 +81,7 @@ fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) 
         format!("*{}*: {}", user, "__sent a file__")
     };
 
-    println!("File len: {}", contents.len());
+    debug!("File len: {}", contents.len());
 
     let file = (filename.as_ref(), Cursor::new(contents));
 
@@ -113,7 +113,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                println!("Error sending file: {:?}", err);
+                debug!("Error sending file: {:?}", err);
             })
     });
 }
@@ -130,7 +130,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                println!("Error sending file: {:?}", err);
+                debug!("Error sending file: {:?}", err);
             })
     });
 }
@@ -147,7 +147,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                println!("Error sending file: {:?}", err);
+                debug!("Error sending file: {:?}", err);
             })
     });
 }
@@ -164,7 +164,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                println!("Error sending file: {:?}", err);
+                debug!("Error sending file: {:?}", err);
             })
     });
 }

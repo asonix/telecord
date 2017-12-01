@@ -90,7 +90,7 @@ pub fn download_file(
             // If the file_size exists and is less than 8 * 10^6 bytes, continue, else take the
             // error path.
             if let Some(file_size) = file.file_size {
-                println!("file_size: {}", file_size);
+                debug!("file_size: {}", file_size);
 
                 if file_size < 8 * 1000 * 1000 {
                     Ok((bot, file))
@@ -146,7 +146,6 @@ pub fn download(bot: RcBot, url: String) -> impl Future<Item = Vec<u8>, Error = 
     result(Ok(Easy::new())).and_then(move |mut req| {
         req.get(true).map(|_| req).map_err(|e| e.into())
     }).and_then(move |mut req| {
-        println!("url: {}", url);
         req.url(url.as_ref()).map(|_| req).map_err(|e| e.into())
     }).and_then(move |mut req| {
         // Define the callback function for the curl request. Here we use an Arc<Mutex<Vec<u8>>> in

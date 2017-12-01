@@ -92,19 +92,19 @@ impl From<mime::Mime> for FileKind {
     fn from(mime: mime::Mime) -> Self {
         match mime.type_() {
             mime::IMAGE => {
-                println!("IMAGE");
+                debug!("IMAGE");
                 FileKind::Image
             }
             mime::VIDEO => {
-                println!("VIDEO");
+                debug!("VIDEO");
                 FileKind::Video
             }
             mime::AUDIO => {
-                println!("AUDIO");
+                debug!("AUDIO");
                 FileKind::Audio
             }
             unknown => {
-                println!("UNKNOWN TYPE: {}", unknown);
+                debug!("UNKNOWN TYPE: {}", unknown);
                 FileKind::Unknown
             }
         }
