@@ -60,7 +60,7 @@ extern crate telecord;
 use serenity::prelude::*;
 use tokio_core::reactor::Core;
 use futures::sync::mpsc::channel;
-use futures::{IntoFuture, Stream};
+use futures::{Future, IntoFuture, Stream};
 use telebot::bot;
 use telebot::functions::*;
 use std::thread;
@@ -129,12 +129,22 @@ fn main() {
         });
 
         // Starts handling messages from Telegram
-        lp.run(stream.for_each(|_| Ok(())).into_future()).unwrap();
+        let res: Result<(), ()> = lp.run(
+            stream
+                .for_each(|_| Ok(()))
+                .or_else(|e| {
+                    debug!("Error: {:?}", e);
+                    Ok(())
+                })
+                .into_future(),
+        );
+
+        res.unwrap();
     });
 
     // Starts handling messages from Discord
-    let _ = discord_bot.start();
+    discord_bot.start().unwrap();
 
-    let _ = tg_thread.join();
-    let _ = dc_thread.join();
+    tg_thread.join().unwrap();
+    dc_thread.join().unwrap();
 }
