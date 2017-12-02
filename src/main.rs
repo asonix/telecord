@@ -97,7 +97,7 @@ fn main() {
         // Sends forwarded messages to Telegram
         telegram_bot.inner.handle.spawn(tg_receiver.for_each(
             move |tg_message| {
-                tg::handle_forward(closure_bot.clone(), tg_message);
+                tg::handle_forward(&closure_bot.clone(), tg_message);
 
                 Ok(())
             },
@@ -117,8 +117,8 @@ fn main() {
         let stream = telegram_bot.get_stream().filter_map(|(bot, update)| {
             if let Some(msg) = update.message {
                 tg::discord::handle_message(
-                    closure_bot2.clone(),
-                    closure_config.clone(),
+                    &closure_bot2.clone(),
+                    &closure_config.clone(),
                     msg,
                     dc_sender.clone(),
                 );

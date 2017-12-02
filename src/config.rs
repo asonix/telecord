@@ -22,7 +22,7 @@ use telebot::objects::Integer;
 use serenity::model::ChannelId;
 
 /// The Config type contains four values, the Discord Bot's Token, the Telegram Bot's token, a
-/// HashMap for quickly getting a Telegram Chat ID from a Discord Channel ID, and a HashMap for
+/// `HashMap` for quickly getting a Telegram Chat ID from a Discord Channel ID, and a `HashMap` for
 /// quickly getting a Discord Channel ID from a Telegram Chat ID.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -50,13 +50,39 @@ impl Config {
     /// issues. Either the config will be correct, or the application will not attempt to deal with
     /// missing configuration options.
     pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the Discord Bot Token
+    pub fn discord(&self) -> &str {
+        &self.discord_token
+    }
+
+    /// Returns the Telegram Bot Token
+    pub fn telegram(&self) -> &str {
+        &self.telegram_token
+    }
+
+    /// Retrieves the Telegram Chat ID that corresponds to the given Discord Channel ID.
+    pub fn telegram_chat_id(&self, discord_channel_id: &ChannelId) -> Option<Integer> {
+        self.discord_to_telegram.get(discord_channel_id).cloned()
+    }
+
+    /// Retrieves the Discord Channel ID that corresponds to the given Telegram Chat ID.
+    pub fn discord_channel_id(&self, telegram_chat_id: &Integer) -> Option<ChannelId> {
+        self.telegram_to_discord.get(telegram_chat_id).cloned()
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
         dotenv().ok();
 
         let mapping_vec = env::var("CHAT_MAPPINGS")
             .expect("Please set the CHAT_MAPPINGS environment variable")
-            .split(",")
+            .split(',')
             .filter_map(|mapping| {
-                let mapping = mapping.split(":").collect::<Vec<_>>();
+                let mapping = mapping.split(':').collect::<Vec<_>>();
 
                 if mapping.len() == 2 {
                     let telegram = mapping[0].parse::<Integer>().expect(
@@ -94,29 +120,5 @@ impl Config {
             discord_to_telegram,
             telegram_to_discord,
         }
-    }
-
-    /// Returns the Discord Bot Token
-    pub fn discord(&self) -> &str {
-        &self.discord_token
-    }
-
-    /// Returns the Telegram Bot Token
-    pub fn telegram(&self) -> &str {
-        &self.telegram_token
-    }
-
-    /// Retrieves the Telegram Chat ID that corresponds to the given Discord Channel ID.
-    pub fn telegram_chat_id(&self, discord_channel_id: &ChannelId) -> Option<Integer> {
-        self.discord_to_telegram.get(discord_channel_id).map(|i| {
-            i.clone()
-        })
-    }
-
-    /// Retrieves the Discord Channel ID that corresponds to the given Telegram Chat ID.
-    pub fn discord_channel_id(&self, telegram_chat_id: &Integer) -> Option<ChannelId> {
-        self.telegram_to_discord.get(telegram_chat_id).map(
-            |i| i.clone(),
-        )
     }
 }

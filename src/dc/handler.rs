@@ -46,7 +46,7 @@ impl Handler {
     }
 
     /// Handles messages indicating a user has Joined the chat.
-    fn join_message(&self, _: Context, message: model::Message) {
+    fn join_message(&self, _: Context, message: &model::Message) {
         telegram::join_message(message);
     }
 }
@@ -58,7 +58,7 @@ impl EventHandler for Handler {
                 self.regular_message(ctx, message);
             }
             model::MessageType::MemberJoin => {
-                self.join_message(ctx, message);
+                self.join_message(ctx, &message);
             }
             _ => {}
         }

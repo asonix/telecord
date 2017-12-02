@@ -65,22 +65,22 @@ impl From<PerformError> for DownloadError {
 
 impl fmt::Display for DownloadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self {
-            &DownloadError::Curl(ref err) => write!(f, "Curl: {}", err),
-            &DownloadError::TokioCurl(ref err) => write!(f, "TokioCurl: {}", err),
-            &DownloadError::Lock => write!(f, "Could not get lock on result vec"),
-            &DownloadError::Not2XX(code) => write!(f, "Response not 2xx: {}", code),
-            &DownloadError::NoCode => write!(f, "Response did not include a response code"),
-            &DownloadError::FileTooLarge(size) => {
+        match *self {
+            DownloadError::Curl(ref err) => write!(f, "Curl: {}", err),
+            DownloadError::TokioCurl(ref err) => write!(f, "TokioCurl: {}", err),
+            DownloadError::Lock => write!(f, "Could not get lock on result vec"),
+            DownloadError::Not2XX(code) => write!(f, "Response not 2xx: {}", code),
+            DownloadError::NoCode => write!(f, "Response did not include a response code"),
+            DownloadError::FileTooLarge(size) => {
                 write!(f, "Requested file is too large: {} bytes", size)
             }
-            &DownloadError::FileSizeUnknown => write!(f, "Could not determine filesize"),
-            &DownloadError::FileName => write!(f, "Could not determine filename"),
+            DownloadError::FileSizeUnknown => write!(f, "Could not determine filesize"),
+            DownloadError::FileName => write!(f, "Could not determine filename"),
         }
     }
 }
 
-/// Download a file given an RcBot and a telebot::objects::File object
+/// Download a file given an `RcBot` and a `telebot::objects::File` object
 pub fn download_file(
     bot: RcBot,
     file: File,
@@ -129,18 +129,18 @@ pub fn download_file(
         .and_then(move |(bot, path, filename)| {
             // Download the file and send the result as an intermediate message representation
             // to the Discord Bot.
-            download(bot.clone(), path).map(|response| (response, filename))
+            download(&bot, path).map(|response| (response, filename))
         })
 }
 
 /// Download a file given a URL. This is designed to work on the Tokio threadpool used by Telebot.
 /// This function will return a failed future if the response code is not in the range 200 to 299
 /// inclusive.
-pub fn download(bot: RcBot, url: String) -> impl Future<Item = Vec<u8>, Error = DownloadError> {
+pub fn download(bot: &RcBot, url: String) -> impl Future<Item = Vec<u8>, Error = DownloadError> {
     // Create a tokio-curl session on the bot's event loop
     let session = Session::new(bot.inner.handle.clone());
     let response = Arc::new(Mutex::new(Vec::new()));
-    let r2 = response.clone();
+    let r2 = Arc::clone(&response);
 
     // Create a new request
     result(Ok(Easy::new())).and_then(move |mut req| {

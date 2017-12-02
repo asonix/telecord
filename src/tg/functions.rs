@@ -28,22 +28,22 @@ use std::io::Cursor;
 use super::{FileKind, FileMessage, Message, MessageContent};
 
 /// Given an intermediate Message type, send a legitimate message to Telegram.
-pub fn handle_forward(bot: RcBot, message: Message) {
+pub fn handle_forward(bot: &RcBot, message: Message) {
     let user = message.from;
     let chat_id = message.chat_id;
 
     match message.content {
         MessageContent::Text(content) => {
-            send_text(bot, user, chat_id, content);
+            send_text(bot, &user, chat_id, &content);
         }
         MessageContent::File(file) => {
-            send_file(bot, user, chat_id, file);
+            send_file(bot, &user, chat_id, file);
         }
     }
 }
 
 // Sends text to Telegram
-fn send_text(bot: RcBot, user: String, chat_id: Integer, content: String) {
+fn send_text(bot: &RcBot, user: &str, chat_id: Integer, content: &str) {
     bot.inner.handle.spawn(
         bot.message(chat_id, {
             // Escape content that could be mistaken for HTML tags.
@@ -65,7 +65,7 @@ fn send_text(bot: RcBot, user: String, chat_id: Integer, content: String) {
 
 // Determines what kind of file is being sent, and dispatches to one of the other send functions
 // such as send_image, send_audio, send_video, and send_document
-fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) {
+fn send_file(bot: &RcBot, user: &str, chat_id: Integer, file_msg: FileMessage) {
     let FileMessage {
         caption,
         filename,
@@ -87,22 +87,22 @@ fn send_file(bot: RcBot, user: String, chat_id: Integer, file_msg: FileMessage) 
 
     match kind {
         FileKind::Image => {
-            send_image(bot, chat_id, file, caption);
+            send_image(bot, chat_id, file, &caption);
         }
         FileKind::Audio => {
-            send_audio(bot, chat_id, file, caption);
+            send_audio(bot, chat_id, file, &caption);
         }
         FileKind::Video => {
-            send_video(bot, chat_id, file, caption);
+            send_video(bot, chat_id, file, &caption);
         }
         FileKind::Unknown => {
-            send_document(bot, chat_id, file, caption);
+            send_document(bot, chat_id, file, &caption);
         }
     }
 }
 
 // Sends an Image to Telegram
-fn send_image<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+fn send_image<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
     T: Into<File>,
 {
@@ -119,7 +119,7 @@ where
 }
 
 // Sends Audio to Telegram
-fn send_audio<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+fn send_audio<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
     T: Into<File>,
 {
@@ -136,7 +136,7 @@ where
 }
 
 // Sends a Video to Telegram
-fn send_video<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+fn send_video<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
     T: Into<File>,
 {
@@ -153,7 +153,7 @@ where
 }
 
 // Sends a Document to Telegram
-fn send_document<T>(bot: RcBot, chat_id: Integer, file: T, caption: String)
+fn send_document<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
     T: Into<File>,
 {

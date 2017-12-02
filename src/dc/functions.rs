@@ -31,14 +31,14 @@ pub fn forward_iter(rx: Receiver<Message>) {
         let channel_id = message.channel_id;
 
         match message.content {
-            MessageContent::Text(content) => send_text(channel_id, user, content),
-            MessageContent::File(file) => send_file(channel_id, user, file),
+            MessageContent::Text(content) => send_text(channel_id, &user, &content),
+            MessageContent::File(file) => send_file(channel_id, &user, file),
         }
     }
 }
 
 // Sends Text to discord
-fn send_text(channel_id: ChannelId, user: String, content: String) {
+fn send_text(channel_id: ChannelId, user: &str, content: &str) {
     let msg = format!("**{}**: {}", user, content);
     match channel_id.say(msg) {
         Ok(_) => (),
@@ -47,7 +47,7 @@ fn send_text(channel_id: ChannelId, user: String, content: String) {
 }
 
 // Sends a file to discord
-fn send_file(channel_id: ChannelId, user: String, file_msg: FileMessage) {
+fn send_file(channel_id: ChannelId, user: &str, file_msg: FileMessage) {
     let FileMessage {
         caption,
         filename,
