@@ -901,6 +901,7 @@ dependencies = [
 [[package]]
 name = "telebot"
 version = "0.2.4"
+source = "git+https://github.com/asonix/telebot.git?branch=remove-unwraps#0c75a6d51d9db6baa0922527c4cbc34399c2aad1"
 dependencies = [
  "curl 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "erased-serde 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -909,7 +910,7 @@ dependencies = [
  "serde 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "telebot-derive 0.0.8",
+ "telebot-derive 0.0.8 (git+https://github.com/asonix/telebot.git?branch=remove-unwraps)",
  "tokio-core 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-curl 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -918,6 +919,7 @@ dependencies = [
 [[package]]
 name = "telebot-derive"
 version = "0.0.8"
+source = "git+https://github.com/asonix/telebot.git?branch=remove-unwraps#0c75a6d51d9db6baa0922527c4cbc34399c2aad1"
 dependencies = [
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -936,7 +938,7 @@ dependencies = [
  "mime 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime-sniffer 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serenity 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "telebot 0.2.4",
+ "telebot 0.2.4 (git+https://github.com/asonix/telebot.git?branch=remove-unwraps)",
  "tokio-core 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-curl 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -1287,6 +1289,8 @@ dependencies = [
 "checksum stable_deref_trait 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "15132e0e364248108c5e2c02e3ab539be8d6f5d52a01ca9bbf27ed657316f02b"
 "checksum syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad"
 "checksum synom 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
+"checksum telebot 0.2.4 (git+https://github.com/asonix/telebot.git?branch=remove-unwraps)" = "<none>"
+"checksum telebot-derive 0.0.8 (git+https://github.com/asonix/telebot.git?branch=remove-unwraps)" = "<none>"
 "checksum tempdir 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "87974a6f5c1dfb344d733055601650059a3363de2a6104819293baff662132d6"
 "checksum thread-id 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a9539db560102d1cef46b8b78ce737ff0bb64e7e18d35b2a5688f7d097d0ff03"
 "checksum thread_local 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "8576dbbfcaef9641452d5cf0df9b0e7eeab7694956dd33bb61515fb8f18cfdd5"
