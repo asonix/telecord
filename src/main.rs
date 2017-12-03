@@ -133,7 +133,7 @@ fn main() {
             stream
                 .for_each(|_| Ok(()))
                 .or_else(|e| {
-                    debug!("Error: {:?}", e);
+                    error!("Error: {:?}", e);
                     Ok(())
                 })
                 .into_future(),

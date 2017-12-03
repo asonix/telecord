@@ -24,6 +24,7 @@ use telebot::functions::{FunctionMessage, FunctionSendAudio, FunctionSendDocumen
 use telebot::objects::Integer;
 use futures::Future;
 use std::io::Cursor;
+use std::convert::TryInto;
 
 use super::{FileKind, FileMessage, Message, MessageContent};
 
@@ -58,7 +59,7 @@ fn send_text(bot: &RcBot, user: &str, chat_id: Integer, content: &str) {
             .send()
             .map(|_| ())
             .map_err(|err| {
-                debug!("Error: {:?}", err);
+                error!("Error: {:?}", err);
             }),
     );
 }
@@ -104,7 +105,7 @@ fn send_file(bot: &RcBot, user: &str, chat_id: Integer, file_msg: FileMessage) {
 // Sends an Image to Telegram
 fn send_image<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
-    T: Into<File>,
+    T: TryInto<File>,
 {
     bot.inner.handle.spawn({
         bot.photo(chat_id)
@@ -113,7 +114,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                debug!("Error sending file: {:?}", err);
+                error!("Error sending file: {:?}", err);
             })
     });
 }
@@ -121,7 +122,7 @@ where
 // Sends Audio to Telegram
 fn send_audio<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
-    T: Into<File>,
+    T: TryInto<File>,
 {
     bot.inner.handle.spawn({
         bot.audio(chat_id)
@@ -130,7 +131,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                debug!("Error sending file: {:?}", err);
+                error!("Error sending file: {:?}", err);
             })
     });
 }
@@ -138,7 +139,7 @@ where
 // Sends a Video to Telegram
 fn send_video<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
-    T: Into<File>,
+    T: TryInto<File>,
 {
     bot.inner.handle.spawn({
         bot.video(chat_id)
@@ -147,7 +148,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                debug!("Error sending file: {:?}", err);
+                error!("Error sending file: {:?}", err);
             })
     });
 }
@@ -155,7 +156,7 @@ where
 // Sends a Document to Telegram
 fn send_document<T>(bot: &RcBot, chat_id: Integer, file: T, caption: &str)
 where
-    T: Into<File>,
+    T: TryInto<File>,
 {
     bot.inner.handle.spawn({
         bot.document(chat_id)
@@ -164,7 +165,7 @@ where
             .send()
             .map(|_| ())
             .map_err(|err| {
-                debug!("Error sending file: {:?}", err);
+                error!("Error sending file: {:?}", err);
             })
     });
 }

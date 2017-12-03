@@ -17,6 +17,7 @@
 //!
 //! It may not be incredibly useful outside the context of the associated main.rs
 
+#![feature(try_from)]
 #![feature(conservative_impl_trait)]
 
 extern crate dotenv;

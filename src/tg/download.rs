@@ -19,11 +19,11 @@
 use std::path::Path;
 use telebot::bot::RcBot;
 use telebot::objects::File;
-use futures::future::{Future, result};
-use tokio_curl::PerformError;
 use curl::Error as CurlError;
-use tokio_curl::Session;
 use curl::easy::Easy;
+use tokio_curl::PerformError;
+use tokio_curl::Session;
+use futures::{Future, IntoFuture};
 
 use std::sync::{Arc, Mutex};
 use std::fmt;
@@ -80,92 +80,85 @@ impl fmt::Display for DownloadError {
     }
 }
 
+fn prepare_request(bot: RcBot, file: File) -> Result<(RcBot, String, String), DownloadError> {
+    // If the file_size exists and is less than 8 * 10^6 bytes, continue, else take the
+    // error path.
+    let file_size = file.file_size.ok_or(DownloadError::FileSizeUnknown)?;
+    debug!("file_size: {}", file_size);
+
+    if file_size >= 8 * 1000 * 1000 {
+        return Err(DownloadError::FileTooLarge(file_size));
+    }
+
+    let path = file.file_path.ok_or(DownloadError::FileName)?;
+
+    let path = format!(
+        "https://api.telegram.org/file/bot{}/{}",
+        bot.inner.key,
+        path
+    );
+
+    let url = Path::new(&path);
+    let filename = url.file_name().ok_or(DownloadError::FileName)?;
+
+    let filename = filename.to_str().ok_or(DownloadError::FileName)?;
+
+    Ok((bot, path.clone(), String::from(filename)))
+}
+
 /// Download a file given an `RcBot` and a `telebot::objects::File` object
 pub fn download_file(
     bot: RcBot,
     file: File,
 ) -> impl Future<Item = (Vec<u8>, String), Error = DownloadError> {
-    result(Ok((bot, file)))
-        .and_then(move |(bot, file)| {
-            // If the file_size exists and is less than 8 * 10^6 bytes, continue, else take the
-            // error path.
-            if let Some(file_size) = file.file_size {
-                debug!("file_size: {}", file_size);
-
-                if file_size < 8 * 1000 * 1000 {
-                    Ok((bot, file))
-                } else {
-                    Err(DownloadError::FileTooLarge(file_size))
-                }
-            } else {
-                Err(DownloadError::FileSizeUnknown)
-            }
-        })
-        .and_then(move |(bot, file)| {
-            // If the file_path exists, get the filename from it and continue, else take the
-            // error path.
-            if let Some(path) = file.file_path {
-                let path = format!(
-                    "https://api.telegram.org/file/bot{}/{}",
-                    bot.inner.key,
-                    path
-                );
-                let url = Path::new(&path);
-                let filename = url.file_name();
-
-                if let Some(filename) = filename {
-                    if let Some(filename) = filename.to_str() {
-                        Ok((bot, path.clone(), String::from(filename)))
-                    } else {
-                        Err(DownloadError::FileName)
-                    }
-                } else {
-                    Err(DownloadError::FileName)
-                }
-            } else {
-                Err(DownloadError::FileName)
-            }
-        })
-        .and_then(move |(bot, path, filename)| {
+    prepare_request(bot, file).into_future().and_then(
+        move |(bot,
+               path,
+               filename)| {
             // Download the file and send the result as an intermediate message representation
             // to the Discord Bot.
-            download(&bot, path).map(|response| (response, filename))
-        })
+            download(&bot, &path).map(|response| (response, filename))
+        },
+    )
+}
+
+fn build_request(response: Arc<Mutex<Vec<u8>>>, url: &str) -> Result<Easy, DownloadError> {
+    // Create a new request
+    let mut req = Easy::new();
+    req.get(true)?;
+    req.url(url)?;
+
+    // Define the callback function for the curl request. Here we use an Arc<Mutex<Vec<u8>>> in
+    // order to share this vector between the curl callback and the response callback. This is the
+    // same logic used by the Telebot crate to fetch data from Telegram (11/28/17)..
+    req.write_function(move |data| match response.lock() {
+        Ok(ref mut vec) => {
+            vec.extend_from_slice(data);
+            Ok(data.len())
+        }
+        Err(_) => Ok(0),
+    })?;
+
+    Ok(req)
 }
 
 /// Download a file given a URL. This is designed to work on the Tokio threadpool used by Telebot.
 /// This function will return a failed future if the response code is not in the range 200 to 299
 /// inclusive.
-pub fn download(bot: &RcBot, url: String) -> impl Future<Item = Vec<u8>, Error = DownloadError> {
+pub fn download(bot: &RcBot, url: &str) -> impl Future<Item = Vec<u8>, Error = DownloadError> {
     // Create a tokio-curl session on the bot's event loop
     let session = Session::new(bot.inner.handle.clone());
     let response = Arc::new(Mutex::new(Vec::new()));
-    let r2 = Arc::clone(&response);
 
-    // Create a new request
-    result(Ok(Easy::new())).and_then(move |mut req| {
-        req.get(true).map(|_| req).map_err(|e| e.into())
-    }).and_then(move |mut req| {
-        req.url(url.as_ref()).map(|_| req).map_err(|e| e.into())
-    }).and_then(move |mut req| {
-        // Define the callback function for the curl request. Here we use an Arc<Mutex<Vec<u8>>> in
-        // order to share this vector between the curl callback and the response callback. This is the
-        // same logic used by the Telebot crate to fetch data from Telegram (11/28/17)..
-        req.write_function(move |data| {
-            match r2.lock() {
-                Ok(ref mut vec) => {
-                    vec.extend_from_slice(data);
-                    Ok(data.len())
-                },
-                Err(_) => Ok(0),
-            }
-        }).map(|_| req).map_err(|e| e.into())
-    }).and_then(move |req| {
-        // Create a future perform the request and then take the error path if the response code is not
-        // between 200 and 299 inclusive
-        session.perform(req).map_err(|e| e.into()).and_then(
-            move |mut res| {
-                if let Ok(code) = res.response_code() {
+    build_request(Arc::clone(&response), url)
+        .into_future()
+        .and_then(move |req| {
+            // Create a future perform the request and then take the error path if the response code is not
+            // between 200 and 299 inclusive
+            session.perform(req).map_err(|e| e.into()).and_then(
+                move |mut res| {
+                    let code = res.response_code().map_err(|_| DownloadError::NoCode)?;
+
                     if 200 <= code && code < 300 {
                         match response.lock() {
                             Ok(ref response) => Ok(response.to_vec()),
@@ -174,10 +167,7 @@ pub fn download(bot: &RcBot, url: String) -> impl Future<Item = Vec<u8>, Error =
                     } else {
                         Err(DownloadError::Not2XX(code))
                     }
-                } else {
-                    Err(DownloadError::NoCode)
-                }
-            },
-        )
-    })
+                },
+            )
+        })
 }

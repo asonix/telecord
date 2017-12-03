@@ -72,7 +72,7 @@ fn no_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model:
         ))
         .wait()
     {
-        debug!("Failed to send text because {}", e);
+        error!("Failed to send text because {}", e);
     }
 }
 
@@ -114,7 +114,7 @@ fn has_attachments(sender: &Sender<tg::Message>, chat_id: Integer, message: mode
                 ))
                 .wait()
             {
-                debug!("Failed to send because {}", e);
+                error!("Failed to send because {}", e);
             }
         }
     }

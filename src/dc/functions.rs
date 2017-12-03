@@ -42,7 +42,7 @@ fn send_text(channel_id: ChannelId, user: &str, content: &str) {
     let msg = format!("**{}**: {}", user, content);
     match channel_id.say(msg) {
         Ok(_) => (),
-        Err(e) => debug!("Failed to send message: {}", e),
+        Err(e) => error!("Failed to send message: {}", e),
     }
 }
 
@@ -72,6 +72,6 @@ fn send_file(channel_id: ChannelId, user: &str, file_msg: FileMessage) {
 
     match res {
         Ok(_) => (),
-        Err(e) => debug!("Failed to send files: {}", e),
+        Err(e) => error!("Failed to send files: {}", e),
     }
 }
