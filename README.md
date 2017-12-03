@@ -1,13 +1,13 @@
 # Telecord
 
-This is a Work In Progress bot to translate Discord messages to Telegram Messages (and the other way around).
+Telecord is a bot that translates Discord messages to Telegram Messages (and the other way around).
 
 [Documentation](https://docs.rs/telecord)
 
 ### Current Status
+__it works__
 
-- Sends text from Discord to Telegram
-- Doesn't send media from Discord to Telegram
+- Sends text and mediate from Discord to Telegram
 - Sends text and media from Telegram to Discord
 
 ### Usage
