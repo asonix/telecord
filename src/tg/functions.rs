@@ -77,9 +77,9 @@ fn send_file(bot: &RcBot, user: &str, chat_id: Integer, file_msg: FileMessage) {
     debug!("filename: {}", filename);
 
     let caption = if let Some(caption) = caption {
-        format!("*{}*: {}", user, caption)
+        format!("{}: {}", user, caption)
     } else {
-        format!("*{}*: {}", user, "__sent a file__")
+        format!("{} {}", user, "sent a file")
     };
 
     debug!("File len: {}", contents.len());

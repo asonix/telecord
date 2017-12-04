@@ -50,6 +50,30 @@ pub fn handle_message(
         return;
     };
 
+    let forwarded = if let Some(ref from) = message.forward_from {
+        Some(get_user_name(from))
+    } else {
+        None
+    };
+
+    let reply = if let Some(ref orig_msg) = message.reply_to_message {
+        if let Some(ref from) = orig_msg.from {
+            Some(get_user_name(from))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let user = if let Some(forwarded) = forwarded {
+        format!("{}, forwarded from {}", user, forwarded)
+    } else if let Some(reply) = reply {
+        format!("{}, in reply to {}", user, reply)
+    } else {
+        user
+    };
+
     debug!("user: {}", user);
     debug!("chat id: {}", &message.chat.id);
 
