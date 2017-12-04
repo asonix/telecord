@@ -928,7 +928,7 @@ dependencies = [
 
 [[package]]
 name = "telecord"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "curl 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
