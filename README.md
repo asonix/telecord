@@ -16,7 +16,7 @@ Make sure you have the proper environment variables set. You can do this with `e
 
 `DISCORD_BOT_TOKEN` and `TELEGRAM_BOT_TOKEN` are self-explanatory, but `CHAT_MAPPINGS` is a comma separated list of colon-separated tuples. The environment variable `1234:abcd,5678:efgh` maps telegram chat `1234` to discord channel `abcd`, and also maps telegram chat `5678` to discord channel `efgh`.
 
-Once you have your environment variable set, you can use `cargo run` to run the bot.
+Once you have your environment variable set, you can use `cargo run` to run the bot. Please note that the bot must be added to and be able to read messages in the Discord Channels and Telegram Chats it is meant to connect.
 
 Here's an example systemd unit file:
 ```
