@@ -13,7 +13,7 @@ dotenv = "0.10"
 serenity = "0.4.3"
 mime = "0.3"
 mime-sniffer = "0.1"
-telebot = { git = "https://github.com/asonix/telebot.git", branch = "remove-unwraps" }
+telebot = "0.2.5"
 tokio-core = "0.1"
 futures = "0.1"
 tokio-curl = "0.1"
