@@ -73,6 +73,15 @@ Restart=always
 WantedBy=default.target
 ```
 
+#### On Windows
+In powershell, navigate to the folder that contains the .exe file and run the following commands
+```powershell
+$env:RUST_LOG = "telecord=info"
+$env:TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_TOKEN"
+$env:DISCORD_BOT_TOKEN = "YOUR_DISCORD_TOKEN"
+$env:CHAT_MAPPINGS = "chat_one:channel_one,chat_two:channel_two"
+.\telecord.exe
+```
 ### License
 
 Telecord is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
