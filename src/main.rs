@@ -46,10 +46,12 @@
 /// from Telegram and sending them to the Discord thread, and receiving messages from Serenity and
 /// sending them to Telegram. Finally, we start Serenity's threadpool from the current thread.
 
-extern crate serenity;
 extern crate telebot;
 extern crate tokio_core;
 extern crate futures;
+
+#[macro_use]
+extern crate serenity;
 
 #[macro_use]
 extern crate log;
@@ -58,6 +60,7 @@ extern crate env_logger;
 extern crate telecord;
 
 use serenity::prelude::*;
+use serenity::framework::standard::StandardFramework;
 use tokio_core::reactor::Core;
 use futures::sync::mpsc::channel;
 use futures::{IntoFuture, Stream};
@@ -143,9 +146,24 @@ fn main() {
         res.unwrap();
     });
 
+    discord_bot.with_framework(
+        StandardFramework::new()
+            .configure(|c| c.prefix("/"))
+            .on("channel_id", channel_id)
+            .on("ping", dc_ping),
+    );
+
     // Starts handling messages from Discord
     discord_bot.start().unwrap();
 
     tg_thread.join().unwrap();
     dc_thread.join().unwrap();
 }
+
+command!(dc_ping(_context, message) {
+    let _ = message.reply("pong");
+});
+
+command!(channel_id(_context, message) {
+    let _ = message.reply(&format!("{}", message.channel_id.0));
+});
