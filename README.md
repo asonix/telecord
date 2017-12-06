@@ -74,6 +74,7 @@ WantedBy=default.target
 ```
 
 #### On Windows
+##### With Powershell and the -msvc release
 In powershell, navigate to the folder that contains the .exe file and run the following commands
 ```powershell
 $env:RUST_LOG = "telecord=info"
@@ -82,6 +83,16 @@ $env:DISCORD_BOT_TOKEN = "YOUR_DISCORD_TOKEN"
 $env:CHAT_MAPPINGS = "chat_one:channel_one,chat_two:channel_two"
 .\telecord.exe
 ```
+##### With MingW and the -gnu release
+In bash, navigate to the folder that contains the .exe file and run the following comands
+```bash
+TELEGRAM_BOT_TOKEN="your token" \
+DISCORD_BOT_TOKEN="your token" \
+CHAT_MAPPINGS="your mappings" \
+RUST_LOG=telecord=info \
+./telecord.exe
+```
+
 ### License
 
 Telecord is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
