@@ -63,13 +63,48 @@ use serenity::prelude::*;
 use serenity::framework::standard::StandardFramework;
 use tokio_core::reactor::Core;
 use futures::sync::mpsc::channel;
-use futures::{IntoFuture, Stream};
+use futures::{Future, IntoFuture, Stream};
 use telebot::bot;
 use telebot::functions::*;
 use std::thread;
 use std::sync;
 
 use telecord::{Config, tg, dc};
+
+fn init_bot(bot: &bot::RcBot) {
+    bot.inner.handle.spawn(
+        bot.get_me()
+            .send()
+            .map_err(|e| println!("Error: {:?}", e))
+            .and_then(|(bot, user)| {
+                let pairs = bot.inner
+                    .handlers
+                    .borrow()
+                    .iter()
+                    .map(|(key, value)| (key.clone(), value.clone()))
+                    .collect::<Vec<_>>();
+
+                let username = if let Some(username) = user.username {
+                    username
+                } else {
+                    return Err(());
+                };
+
+                for (key, value) in pairs {
+                    bot.inner.handlers.borrow_mut().insert(
+                        format!(
+                            "{}@{}",
+                            key,
+                            username
+                        ),
+                        value,
+                    );
+                }
+
+                Ok(())
+            }),
+    );
+}
 
 fn main() {
     env_logger::init().unwrap();
@@ -94,6 +129,7 @@ fn main() {
     let tg_thread = thread::spawn(move || {
         let mut lp = Core::new().unwrap();
         let telegram_bot = bot::RcBot::new(lp.handle(), config.telegram()).update_interval(200);
+        init_bot(&telegram_bot);
         let closure_bot = telegram_bot.clone();
         let closure_bot2 = telegram_bot.clone();
 
