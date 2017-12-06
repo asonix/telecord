@@ -13,7 +13,7 @@ _it works_
 
 ### Getting the bot
 #### From binary release
-Grab a download from the [current release](https://github.com/asonix/telecord/releases). If there is no release for your operating system or architecture, go to the **Building** section of this readme.
+Grab a download from the [current release](https://github.com/asonix/telecord/releases). If there is no release for your operating system or architecture, go to the **Crates.io or From Source** sections of this readme.
 
 #### From Crates.io
 This project requires Rust Nightly to compile. If you don't have [Rustup](https://www.rustup.rs/), this is where you install it.
