@@ -29,6 +29,7 @@
 // from Telegram and sending them to the Discord thread, and receiving messages from Serenity and
 // sending them to Telegram. Finally, we start Serenity's threadpool from the current thread.
 
+extern crate openssl_probe;
 extern crate telebot;
 extern crate tokio_core;
 extern crate futures;
@@ -90,6 +91,7 @@ fn init_bot(bot: &bot::RcBot) {
 }
 
 fn main() {
+    openssl_probe::init_ssl_cert_env_vars();
     env_logger::init().unwrap();
     info!("Starting up!");
     let config = Config::new();
