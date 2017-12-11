@@ -52,9 +52,7 @@ fn send_text(bot: &RcBot, user: &str, chat_id: Integer, content: &str) {
                 "<",
                 "&lt;",
             );
-            let output = format!("<b>{}</b>: {}", user, escaped_content);
-            debug!("{}", output);
-            output
+            format!("<b>{}</b>: {}", user, escaped_content)
         }).parse_mode("HTML")
             .send()
             .map(|_| ())

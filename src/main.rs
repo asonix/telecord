@@ -153,7 +153,7 @@ fn main() {
         });
 
         // Starts handling messages from Telegram
-        let res: Result<(), ()> = lp.run(
+        let res = lp.run(
             stream
                 .map(|_| ())
                 .or_else(|e| {

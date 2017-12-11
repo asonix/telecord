@@ -74,17 +74,12 @@ pub fn handle_message(
         user
     };
 
-    debug!("user: {}", user);
-    debug!("chat id: {}", &message.chat.id);
-
     let channel_id = config.discord_channel_id(&message.chat.id);
     let channel_id = if let Some(channel_id) = channel_id {
         channel_id
     } else {
         return;
     };
-
-    debug!("channel_id: {}", channel_id);
 
     let file_id = get_file_id(&message);
 

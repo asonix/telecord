@@ -33,12 +33,6 @@ use config::Config;
 /// the message came from, and then offloads to `no_attachments` and `has_attachments` depending on
 /// whether files are attached.
 pub fn regular_message(config: &Config, sender: Sender<tg::Message>, message: model::Message) {
-    debug!(
-        "content: {}, channel: {}",
-        message.content,
-        message.channel_id
-    );
-
     let chat_id = config.telegram_chat_id(&message.channel_id);
     let chat_id = if let Some(chat_id) = chat_id {
         chat_id
