@@ -43,8 +43,9 @@ extern crate serenity;
 extern crate futures;
 extern crate mime;
 extern crate mime_sniffer;
-extern crate tokio_curl;
-extern crate curl;
+extern crate hyper;
+extern crate hyper_tls;
+extern crate native_tls;
 
 #[macro_use]
 extern crate log;

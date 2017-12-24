@@ -19,58 +19,62 @@
 use std::path::Path;
 use telebot::bot::RcBot;
 use telebot::objects::File;
-use curl::Error as CurlError;
-use curl::easy::Easy;
-use tokio_curl::PerformError;
-use tokio_curl::Session;
-use futures::{Future, IntoFuture};
+use futures::{Future, IntoFuture, Stream};
+use hyper::Error as HyperError;
+use hyper::error::UriError;
+use native_tls::Error as TlsError;
 
-use std::sync::{Arc, Mutex};
+use hyper::{Client, Method, Request, Body};
+use hyper::client::HttpConnector;
+use hyper_tls::HttpsConnector;
+
 use std::fmt;
 
-/// This error type contains wrappers around Curl's and Tokio-Curl's errors, and provides a few
+/// This error type contains wrappers around Hyper's errors, and provides a few
 /// unit types.
 #[derive(Debug)]
 pub enum DownloadError {
-    /// Wrap errors created by the curl library, such as when using get(), url(), etc.
-    Curl(CurlError),
-    /// Wrap errors created by the Tokio-Curl libray in session.perform()
-    TokioCurl(PerformError),
+    /// Wrap errors created by the Hyper library. When making requests
+    Hyper(HyperError),
+    /// Wrap errors crated by Hyper's URI Parser
+    Uri(UriError),
+    /// Wrap errors created by Native TLS, used by Hyper Tls
+    Tls(TlsError),
     /// If the response code from Telegram is not 2xx, this error will occur
-    Not2XX(u32),
+    Not2XX(u16),
     /// If the file requested is too large, this error will occur
     FileTooLarge(i64),
     /// If the file requested has no size metadata, this error will occur
     FileSizeUnknown,
     /// If the filename cannot be determined, this error will occur
     FileName,
-    /// If the mutex for accessing the result Vec<u8> is currently locked (it shouldn't be), this
-    /// error will occur.
-    Lock,
-    /// If the response code from Telegram does not exist, this error will occur
-    NoCode,
 }
 
-impl From<CurlError> for DownloadError {
-    fn from(err: CurlError) -> Self {
-        DownloadError::Curl(err)
+impl From<HyperError> for DownloadError {
+    fn from(err: HyperError) -> Self {
+        DownloadError::Hyper(err)
     }
 }
 
-impl From<PerformError> for DownloadError {
-    fn from(err: PerformError) -> Self {
-        DownloadError::TokioCurl(err)
+impl From<UriError> for DownloadError {
+    fn from(err: UriError) -> Self {
+        DownloadError::Uri(err)
+    }
+}
+
+impl From<TlsError> for DownloadError {
+    fn from(err: TlsError) -> Self {
+        DownloadError::Tls(err)
     }
 }
 
 impl fmt::Display for DownloadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match *self {
-            DownloadError::Curl(ref err) => write!(f, "Curl: {}", err),
-            DownloadError::TokioCurl(ref err) => write!(f, "TokioCurl: {}", err),
-            DownloadError::Lock => write!(f, "Could not get lock on result vec"),
+            DownloadError::Hyper(ref err) => write!(f, "Hyper: {}", err),
+            DownloadError::Uri(ref err) => write!(f, "hyper::Uri: {}", err),
+            DownloadError::Tls(ref err) => write!(f, "native_tls: {}", err),
             DownloadError::Not2XX(code) => write!(f, "Response not 2xx: {}", code),
-            DownloadError::NoCode => write!(f, "Response did not include a response code"),
             DownloadError::FileTooLarge(size) => {
                 write!(f, "Requested file is too large: {} bytes", size)
             }
@@ -122,52 +126,39 @@ pub fn download_file(
     )
 }
 
-fn build_request(response: Arc<Mutex<Vec<u8>>>, url: &str) -> Result<Easy, DownloadError> {
+fn build_request(
+    bot: &RcBot,
+    url: &str,
+) -> Result<(Client<HttpsConnector<HttpConnector>, Body>, Request<Body>), DownloadError> {
+    let client = Client::configure()
+        .connector(HttpsConnector::new(2, &bot.inner.handle)?)
+        .build(&bot.inner.handle);
     // Create a new request
-    let mut req = Easy::new();
-    req.get(true)?;
-    req.url(url)?;
-
-    // Define the callback function for the curl request. Here we use an Arc<Mutex<Vec<u8>>> in
-    // order to share this vector between the curl callback and the response callback. This is the
-    // same logic used by the Telebot crate to fetch data from Telegram (11/28/17)..
-    req.write_function(move |data| match response.lock() {
-        Ok(ref mut vec) => {
-            vec.extend_from_slice(data);
-            Ok(data.len())
-        }
-        Err(_) => Ok(0),
-    })?;
-
-    Ok(req)
+    let req = Request::new(Method::Get, url.parse()?);
+    Ok((client, req))
 }
 
 /// Download a file given a URL. This is designed to work on the Tokio threadpool used by Telebot.
 /// This function will return a failed future if the response code is not in the range 200 to 299
 /// inclusive.
 pub fn download(bot: &RcBot, url: &str) -> impl Future<Item = Vec<u8>, Error = DownloadError> {
-    // Create a tokio-curl session on the bot's event loop
-    let session = Session::new(bot.inner.handle.clone());
-    let response = Arc::new(Mutex::new(Vec::new()));
-
-    build_request(Arc::clone(&response), url)
+    build_request(bot, url)
         .into_future()
-        .and_then(move |req| {
-            // Create a future perform the request and then take the error path if the response code is not
-            // between 200 and 299 inclusive
-            session.perform(req).map_err(|e| e.into()).and_then(
-                move |mut res| {
-                    let code = res.response_code().map_err(|_| DownloadError::NoCode)?;
+        .and_then(|(client, req)| {
+            client.request(req).map_err(DownloadError::from)
+        })
+        .and_then(move |res| {
+            let code = res.status().as_u16();
 
-                    if 200 <= code && code < 300 {
-                        match response.lock() {
-                            Ok(ref response) => Ok(response.to_vec()),
-                            Err(_) => Err(DownloadError::Lock),
-                        }
-                    } else {
-                        Err(DownloadError::Not2XX(code))
-                    }
-                },
+            if 200 <= code && code < 300 {
+                Ok(res)
+            } else {
+                Err(DownloadError::Not2XX(code))
+            }
+        })
+        .and_then(|res| {
+            res.body().concat2().map(|chunk| chunk.to_vec()).map_err(
+                DownloadError::from,
             )
         })
 }
