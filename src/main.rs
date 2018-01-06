@@ -137,7 +137,7 @@ fn tg_supervisor(
             } else {
                 Some((bot, update))
             })
-            .map_err(|e| error!("Error: {}", e))
+            .map_err(|e| error!("Error: {:?}", e))
             .for_each(|_| Ok(()));
 
         // Starts handling messages from Telegram

@@ -141,7 +141,7 @@ fn send_file(
             .send()
             .map_err(|e| error!("Failed: {:?}", e))
             .and_then(|(bot, file)| {
-                download_file(bot, file).map_err(|e| error!("Error: {}", e))
+                download_file(bot, file).map_err(|e| error!("Error: {:?}", e))
             })
             .and_then(move |(response, filename)| {
                 let filename = if sticker {
@@ -160,7 +160,7 @@ fn send_file(
 
                 match res {
                     Ok(_) => (),
-                    Err(e) => error!("Failed to send file: {}", e),
+                    Err(e) => error!("Failed to send file: {:?}", e),
                 }
                 Ok(())
             }),
@@ -173,6 +173,6 @@ fn send_text(sender: &Sender<dc::Message>, channel_id: ChannelId, user: String, 
 
     match res {
         Ok(_) => (),
-        Err(e) => error!("Failed to send text: {}", e),
+        Err(e) => error!("Failed to send text: {:?}", e),
     }
 }
