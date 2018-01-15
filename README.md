@@ -2,7 +2,7 @@
 
 Telecord is a bot that translates Discord messages to Telegram Messages (and the other way around).
 
-[Documentation](https://docs.rs/telecord)
+[Documentation](https://asonix.gitlab.io/telecord/telecord/index.html)
 [Crates.io](https://crates.io/crates/telecord)
 
 ### Current Status

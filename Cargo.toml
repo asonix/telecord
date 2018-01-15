@@ -5,6 +5,7 @@ version = "0.1.4"
 license = "GPL-3.0"
 authors = ["Riley Trautman <asonix@tamu.edu>"]
 repository = "https://github.com/asonix/telecord"
+documentation = "https://asonix.gitlab.io/telecord/telecord/index.html"
 readme = "README.md"
 keywords = ["telegram", "discord"]
 
