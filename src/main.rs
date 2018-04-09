@@ -29,10 +29,10 @@
 // from Telegram and sending them to the Discord thread, and receiving messages from Serenity and
 // sending them to Telegram. Finally, we start Serenity's threadpool from the current thread.
 
+extern crate futures;
 extern crate openssl_probe;
 extern crate telebot;
 extern crate tokio_core;
-extern crate futures;
 
 #[macro_use]
 extern crate serenity;
@@ -53,7 +53,7 @@ use telebot::functions::*;
 use std::thread;
 use std::sync;
 
-use telecord::{Config, tg, dc};
+use telecord::{dc, tg, Config};
 
 fn init_bot(bot: &bot::RcBot) {
     bot.inner.handle.spawn(
@@ -75,14 +75,10 @@ fn init_bot(bot: &bot::RcBot) {
                 };
 
                 for (key, value) in pairs {
-                    bot.inner.handlers.borrow_mut().insert(
-                        format!(
-                            "{}@{}",
-                            key,
-                            username
-                        ),
-                        value,
-                    );
+                    bot.inner
+                        .handlers
+                        .borrow_mut()
+                        .insert(format!("{}@{}", key, username), value);
                 }
 
                 Ok(())
@@ -104,38 +100,45 @@ fn tg_supervisor(
     let closure_bot2 = telegram_bot.clone();
 
     // Sends forwarded messages to Telegram
-    telegram_bot.inner.handle.spawn(tg_receiver.for_each(
-        move |tg_message| {
+    telegram_bot
+        .inner
+        .handle
+        .spawn(tg_receiver.for_each(move |tg_message| {
             tg::handle_forward(&closure_bot.clone(), tg_message);
 
             Ok(())
-        },
-    ));
+        }));
 
     // useful for testing if the bot is running
-    telegram_bot.register(telegram_bot.new_cmd("/ping").and_then(|(bot, msg)| {
-        bot.message(msg.chat.id, "pong".into()).send()
-    }));
+    telegram_bot.register(
+        telegram_bot
+            .new_cmd("/ping")
+            .and_then(|(bot, msg)| bot.message(msg.chat.id, "pong".into()).send()),
+    );
 
     // useful for getting chat_ids from group chats
-    telegram_bot.register(telegram_bot.new_cmd("/chat_id").and_then(|(bot, msg)| {
-        bot.message(msg.chat.id, format!("{}", msg.chat.id)).send()
-    }));
+    telegram_bot.register(
+        telegram_bot
+            .new_cmd("/chat_id")
+            .and_then(|(bot, msg)| bot.message(msg.chat.id, format!("{}", msg.chat.id)).send()),
+    );
 
     loop {
         // forwards Telegram messages to Discord
         let stream = telegram_bot
             .get_stream()
-            .filter_map(|(bot, update)| if let Some(msg) = update.message {
-                tg::discord::handle_message(
-                    &closure_bot2.clone(),
-                    &closure_config.clone(),
-                    msg,
-                    dc_sender.clone(),
-                );
-                None
-            } else {
-                Some((bot, update))
+            .filter_map(|(bot, update)| {
+                if let Some(msg) = update.message {
+                    tg::discord::handle_message(
+                        &closure_bot2.clone(),
+                        &closure_config.clone(),
+                        msg,
+                        dc_sender.clone(),
+                    );
+                    None
+                } else {
+                    Some((bot, update))
+                }
             })
             .map_err(|e| error!("Error: {:?}", e))
             .for_each(|_| Ok(()));
@@ -153,13 +156,13 @@ fn dc_bot_supervisor(config: Config, tg_sender: Sender<tg::Message>) {
     let mut discord_bot = Client::new(
         config.discord(),
         dc::Handler::new(config.clone(), tg_sender),
-    );
+    ).unwrap();
 
     discord_bot.with_framework(
         StandardFramework::new()
             .configure(|c| c.prefix("/"))
-            .on("channel_id", channel_id)
-            .on("ping", dc_ping),
+            .cmd("channel_id", channel_id)
+            .cmd("ping", dc_ping),
     );
 
     // Starts handling messages from Discord
@@ -175,7 +178,7 @@ fn dc_sender_supervisor(dc_receiver: sync::mpsc::Receiver<dc::Message>) {
 
 fn main() {
     openssl_probe::init_ssl_cert_env_vars();
-    env_logger::init().unwrap();
+    env_logger::init();
     info!("Starting up!");
     let config = Config::new();
 

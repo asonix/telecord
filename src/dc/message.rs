@@ -15,7 +15,7 @@
 
 //! This module defines the intermediate representation of a Discord message.
 
-use serenity::model::ChannelId;
+use serenity::model::id::ChannelId;
 
 /// The outermost layer of the Discord Message representation
 pub struct Message {

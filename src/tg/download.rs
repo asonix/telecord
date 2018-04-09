@@ -24,7 +24,7 @@ use hyper::Error as HyperError;
 use hyper::error::UriError;
 use native_tls::Error as TlsError;
 
-use hyper::{Client, Method, Request, Body};
+use hyper::{Body, Client, Method, Request};
 use hyper::client::HttpConnector;
 use hyper_tls::HttpsConnector;
 
@@ -98,8 +98,7 @@ fn prepare_request(bot: RcBot, file: File) -> Result<(RcBot, String, String), Do
 
     let path = format!(
         "https://api.telegram.org/file/bot{}/{}",
-        bot.inner.key,
-        path
+        bot.inner.key, path
     );
 
     let url = Path::new(&path);
@@ -115,15 +114,13 @@ pub fn download_file(
     bot: RcBot,
     file: File,
 ) -> impl Future<Item = (Vec<u8>, String), Error = DownloadError> {
-    prepare_request(bot, file).into_future().and_then(
-        move |(bot,
-               path,
-               filename)| {
+    prepare_request(bot, file)
+        .into_future()
+        .and_then(move |(bot, path, filename)| {
             // Download the file and send the result as an intermediate message representation
             // to the Discord Bot.
             download(&bot, &path).map(|response| (response, filename))
-        },
-    )
+        })
 }
 
 fn build_request(
@@ -144,9 +141,7 @@ fn build_request(
 pub fn download(bot: &RcBot, url: &str) -> impl Future<Item = Vec<u8>, Error = DownloadError> {
     build_request(bot, url)
         .into_future()
-        .and_then(|(client, req)| {
-            client.request(req).map_err(DownloadError::from)
-        })
+        .and_then(|(client, req)| client.request(req).map_err(DownloadError::from))
         .and_then(move |res| {
             let code = res.status().as_u16();
 
@@ -157,8 +152,9 @@ pub fn download(bot: &RcBot, url: &str) -> impl Future<Item = Vec<u8>, Error = D
             }
         })
         .and_then(|res| {
-            res.body().concat2().map(|chunk| chunk.to_vec()).map_err(
-                DownloadError::from,
-            )
+            res.body()
+                .concat2()
+                .map(|chunk| chunk.to_vec())
+                .map_err(DownloadError::from)
         })
 }

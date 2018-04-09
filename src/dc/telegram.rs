@@ -32,7 +32,7 @@ use config::Config;
 /// This function first checks if there is an associated Telegram Chat ID for the Discord Channel
 /// the message came from, and then offloads to `no_attachments` and `has_attachments` depending on
 /// whether files are attached.
-pub fn regular_message(config: &Config, sender: Sender<tg::Message>, message: model::Message) {
+pub fn regular_message(config: &Config, sender: Sender<tg::Message>, message: model::channel::Message) {
     let chat_id = config.telegram_chat_id(&message.channel_id);
     let chat_id = if let Some(chat_id) = chat_id {
         chat_id
@@ -52,12 +52,12 @@ pub fn regular_message(config: &Config, sender: Sender<tg::Message>, message: mo
 }
 
 /// Join Messages occur when a user joins a Discord channel. This function is currently a stub.
-pub fn join_message(message: &model::Message) {
+pub fn join_message(message: &model::channel::Message) {
     debug!("{} joined!", message.content);
 }
 
 // Builds a text message representation and sends it to the Telegram bot.
-fn no_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model::Message) {
+fn no_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model::channel::Message) {
     if let Err(e) = sender
         .send(tg::Message::text(
             message.author.name,
@@ -71,7 +71,7 @@ fn no_attachments(sender: Sender<tg::Message>, chat_id: Integer, message: model:
 }
 
 // For each attachment, send a file message representation to the Telegram bot.
-fn has_attachments(sender: &Sender<tg::Message>, chat_id: Integer, message: model::Message) {
+fn has_attachments(sender: &Sender<tg::Message>, chat_id: Integer, message: model::channel::Message) {
     let content = if message.content.is_empty() {
         None
     } else {

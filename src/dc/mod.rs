@@ -21,5 +21,5 @@ mod functions;
 pub mod telegram;
 
 pub use self::handler::Handler;
-pub use self::message::{Message, MessageContent, FileMessage};
+pub use self::message::{FileMessage, Message, MessageContent};
 pub use self::functions::forward_iter;

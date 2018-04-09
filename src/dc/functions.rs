@@ -18,9 +18,9 @@
 
 use std::sync::mpsc::Receiver;
 use serenity::http::AttachmentType;
-use serenity::model::ChannelId;
+use serenity::model::id::ChannelId;
 
-use super::{Message, MessageContent, FileMessage};
+use super::{FileMessage, Message, MessageContent};
 
 /// Iterates over the given receiver and translates each Message into legitimate Discord Messages.
 /// This function should be called in its own thread, since it will block until all Messages are

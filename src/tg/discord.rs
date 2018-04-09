@@ -22,7 +22,7 @@ use std::sync::mpsc::Sender;
 use telebot::objects;
 use telebot::RcBot;
 use telebot::functions::FunctionGetFile;
-use serenity::model::ChannelId;
+use serenity::model::id::ChannelId;
 use futures::Future;
 
 use dc;
@@ -114,9 +114,10 @@ fn get_file_id(message: &objects::Message) -> Option<String> {
     } else if let Some(ref document) = message.document {
         Some(document.file_id.clone())
     } else if let Some(ref photos) = message.photo {
-        photos.iter().max_by_key(|photo| photo.width).map(|photo| {
-            photo.file_id.clone()
-        })
+        photos
+            .iter()
+            .max_by_key(|photo| photo.width)
+            .map(|photo| photo.file_id.clone())
     } else if let Some(ref sticker) = message.sticker {
         Some(sticker.file_id.clone())
     } else if let Some(ref voice) = message.voice {
@@ -140,9 +141,7 @@ fn send_file(
         bot.get_file(file_id)
             .send()
             .map_err(|e| error!("Failed: {:?}", e))
-            .and_then(|(bot, file)| {
-                download_file(bot, file).map_err(|e| error!("Error: {:?}", e))
-            })
+            .and_then(|(bot, file)| download_file(bot, file).map_err(|e| error!("Error: {:?}", e)))
             .and_then(move |(response, filename)| {
                 let filename = if sticker {
                     format!("{}.webp", filename)
