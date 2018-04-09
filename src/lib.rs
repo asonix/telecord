@@ -35,16 +35,16 @@
 //! It may not be incredibly useful outside the context of the associated main.rs
 
 #![feature(try_from)]
-#![feature(conservative_impl_trait)]
 
 extern crate dotenv;
-extern crate telebot;
-extern crate serenity;
 extern crate futures;
+extern crate hyper;
+extern crate hyper_tls;
 extern crate mime;
 extern crate mime_sniffer;
-extern crate tokio_curl;
-extern crate curl;
+extern crate native_tls;
+extern crate serenity;
+extern crate telebot;
 
 #[macro_use]
 extern crate log;

@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::env;
 use dotenv::dotenv;
 use telebot::objects::Integer;
-use serenity::model::ChannelId;
+use serenity::model::id::ChannelId;
 
 /// The Config type contains four values, the Discord Bot's Token, the Telegram Bot's token, a
 /// `HashMap` for quickly getting a Telegram Chat ID from a Discord Channel ID, and a `HashMap` for
@@ -85,12 +85,14 @@ impl Default for Config {
                 let mapping = mapping.split(':').collect::<Vec<_>>();
 
                 if mapping.len() == 2 {
-                    let telegram = mapping[0].parse::<Integer>().expect(
-                        "Failed to parse Telegram Chat ID",
+                    let telegram = mapping[0]
+                        .parse::<Integer>()
+                        .expect("Failed to parse Telegram Chat ID");
+                    let discord = ChannelId(
+                        mapping[1]
+                            .parse()
+                            .expect("Failed to parse Discord Channel ID"),
                     );
-                    let discord = ChannelId(mapping[1].parse().expect(
-                        "Failed to parse Discord Channel ID",
-                    ));
                     Some((telegram, discord))
                 } else {
                     None
@@ -106,13 +108,11 @@ impl Default for Config {
             telegram_to_discord.insert(tele, disc);
         }
 
-        let discord_token = env::var("DISCORD_BOT_TOKEN").expect(
-            "Please set the DISCORD_BOT_TOKEN environment variable",
-        );
+        let discord_token = env::var("DISCORD_BOT_TOKEN")
+            .expect("Please set the DISCORD_BOT_TOKEN environment variable");
 
-        let telegram_token = env::var("TELEGRAM_BOT_TOKEN").expect(
-            "Please set the TELEGRAM_BOT_TOKEN environment variable",
-        );
+        let telegram_token = env::var("TELEGRAM_BOT_TOKEN")
+            .expect("Please set the TELEGRAM_BOT_TOKEN environment variable");
 
         Config {
             discord_token,

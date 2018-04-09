@@ -18,9 +18,9 @@
 
 use std::sync::mpsc::Receiver;
 use serenity::http::AttachmentType;
-use serenity::model::ChannelId;
+use serenity::model::id::ChannelId;
 
-use super::{Message, MessageContent, FileMessage};
+use super::{FileMessage, Message, MessageContent};
 
 /// Iterates over the given receiver and translates each Message into legitimate Discord Messages.
 /// This function should be called in its own thread, since it will block until all Messages are
@@ -42,7 +42,7 @@ fn send_text(channel_id: ChannelId, user: &str, content: &str) {
     let msg = format!("**{}**: {}", user, content);
     match channel_id.say(msg) {
         Ok(_) => (),
-        Err(e) => error!("Failed to send message: {}", e),
+        Err(e) => error!("Failed to send message: {:?}", e),
     }
 }
 
@@ -72,6 +72,6 @@ fn send_file(channel_id: ChannelId, user: &str, file_msg: FileMessage) {
 
     match res {
         Ok(_) => (),
-        Err(e) => error!("Failed to send files: {}", e),
+        Err(e) => error!("Failed to send files: {:?}", e),
     }
 }

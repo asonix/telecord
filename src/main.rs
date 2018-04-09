@@ -29,10 +29,10 @@
 // from Telegram and sending them to the Discord thread, and receiving messages from Serenity and
 // sending them to Telegram. Finally, we start Serenity's threadpool from the current thread.
 
+extern crate futures;
 extern crate openssl_probe;
 extern crate telebot;
 extern crate tokio_core;
-extern crate futures;
 
 #[macro_use]
 extern crate serenity;
@@ -46,14 +46,14 @@ extern crate telecord;
 use serenity::prelude::*;
 use serenity::framework::standard::StandardFramework;
 use tokio_core::reactor::Core;
-use futures::sync::mpsc::channel;
-use futures::{Future, IntoFuture, Stream};
+use futures::sync::mpsc::{channel, Receiver, Sender};
+use futures::{Future, Stream};
 use telebot::bot;
 use telebot::functions::*;
 use std::thread;
 use std::sync;
 
-use telecord::{Config, tg, dc};
+use telecord::{dc, tg, Config};
 
 fn init_bot(bot: &bot::RcBot) {
     bot.inner.handle.spawn(
@@ -75,14 +75,10 @@ fn init_bot(bot: &bot::RcBot) {
                 };
 
                 for (key, value) in pairs {
-                    bot.inner.handlers.borrow_mut().insert(
-                        format!(
-                            "{}@{}",
-                            key,
-                            username
-                        ),
-                        value,
-                    );
+                    bot.inner
+                        .handlers
+                        .borrow_mut()
+                        .insert(format!("{}@{}", key, username), value);
                 }
 
                 Ok(())
@@ -90,95 +86,113 @@ fn init_bot(bot: &bot::RcBot) {
     );
 }
 
+fn tg_supervisor(
+    config: Config,
+    dc_sender: sync::mpsc::Sender<dc::Message>,
+    tg_receiver: Receiver<tg::Message>,
+) {
+    let closure_config = config.clone();
+
+    let mut lp = Core::new().unwrap();
+    let telegram_bot = bot::RcBot::new(lp.handle(), config.telegram()).update_interval(200);
+    init_bot(&telegram_bot);
+    let closure_bot = telegram_bot.clone();
+    let closure_bot2 = telegram_bot.clone();
+
+    // Sends forwarded messages to Telegram
+    telegram_bot
+        .inner
+        .handle
+        .spawn(tg_receiver.for_each(move |tg_message| {
+            tg::handle_forward(&closure_bot.clone(), tg_message);
+
+            Ok(())
+        }));
+
+    // useful for testing if the bot is running
+    telegram_bot.register(
+        telegram_bot
+            .new_cmd("/ping")
+            .and_then(|(bot, msg)| bot.message(msg.chat.id, "pong".into()).send()),
+    );
+
+    // useful for getting chat_ids from group chats
+    telegram_bot.register(
+        telegram_bot
+            .new_cmd("/chat_id")
+            .and_then(|(bot, msg)| bot.message(msg.chat.id, format!("{}", msg.chat.id)).send()),
+    );
+
+    loop {
+        // forwards Telegram messages to Discord
+        let stream = telegram_bot
+            .get_stream()
+            .filter_map(|(bot, update)| {
+                if let Some(msg) = update.message {
+                    tg::discord::handle_message(
+                        &closure_bot2.clone(),
+                        &closure_config.clone(),
+                        msg,
+                        dc_sender.clone(),
+                    );
+                    None
+                } else {
+                    Some((bot, update))
+                }
+            })
+            .map_err(|e| error!("Error: {:?}", e))
+            .for_each(|_| Ok(()));
+
+        // Starts handling messages from Telegram
+        let res = lp.run(stream);
+
+        if let Err(e) = res {
+            error!("Error in event loop: {:?}", e);
+        }
+    }
+}
+
+fn dc_bot_supervisor(config: Config, tg_sender: Sender<tg::Message>) {
+    let mut discord_bot = Client::new(
+        config.discord(),
+        dc::Handler::new(config.clone(), tg_sender),
+    ).unwrap();
+
+    discord_bot.with_framework(
+        StandardFramework::new()
+            .configure(|c| c.prefix("/"))
+            .cmd("channel_id", channel_id)
+            .cmd("ping", dc_ping),
+    );
+
+    // Starts handling messages from Discord
+    discord_bot.start().unwrap();
+    info!("discord_bot ended!");
+}
+
+fn dc_sender_supervisor(dc_receiver: sync::mpsc::Receiver<dc::Message>) {
+    // Sends forwared messages to Discord
+    dc::forward_iter(dc_receiver);
+    info!("forward_iter ended!");
+}
+
 fn main() {
     openssl_probe::init_ssl_cert_env_vars();
-    env_logger::init().unwrap();
+    env_logger::init();
     info!("Starting up!");
     let config = Config::new();
 
     let (tg_sender, tg_receiver) = channel::<tg::Message>(100);
     let (dc_sender, dc_receiver) = sync::mpsc::channel::<dc::Message>();
 
-    let mut discord_bot = Client::new(
-        config.discord(),
-        dc::Handler::new(config.clone(), tg_sender),
-    );
+    let tg_config = config.clone();
+    let tg_supervisor = thread::spawn(move || tg_supervisor(tg_config, dc_sender, tg_receiver));
+    let dc_sender_supervisor = thread::spawn(move || dc_sender_supervisor(dc_receiver));
+    let dc_bot_supervisor = thread::spawn(move || dc_bot_supervisor(config, tg_sender));
 
-    let closure_config = config.clone();
-
-    let dc_thread = thread::spawn(move || {
-        // Sends forwared messages to Discord
-        dc::forward_iter(dc_receiver)
-    });
-
-    let tg_thread = thread::spawn(move || {
-        let mut lp = Core::new().unwrap();
-        let telegram_bot = bot::RcBot::new(lp.handle(), config.telegram()).update_interval(200);
-        init_bot(&telegram_bot);
-        let closure_bot = telegram_bot.clone();
-        let closure_bot2 = telegram_bot.clone();
-
-        // Sends forwarded messages to Telegram
-        telegram_bot.inner.handle.spawn(tg_receiver.for_each(
-            move |tg_message| {
-                tg::handle_forward(&closure_bot.clone(), tg_message);
-
-                Ok(())
-            },
-        ));
-
-        // useful for testing if the bot is running
-        telegram_bot.register(telegram_bot.new_cmd("/ping").and_then(|(bot, msg)| {
-            bot.message(msg.chat.id, "pong".into()).send()
-        }));
-
-        // useful for getting chat_ids from group chats
-        telegram_bot.register(telegram_bot.new_cmd("/chat_id").and_then(|(bot, msg)| {
-            bot.message(msg.chat.id, format!("{}", msg.chat.id)).send()
-        }));
-
-        // forwards Telegram messages to Discord
-        let stream = telegram_bot.get_stream().filter_map(|(bot, update)| {
-            if let Some(msg) = update.message {
-                tg::discord::handle_message(
-                    &closure_bot2.clone(),
-                    &closure_config.clone(),
-                    msg,
-                    dc_sender.clone(),
-                );
-                None
-            } else {
-                Some((bot, update))
-            }
-        });
-
-        // Starts handling messages from Telegram
-        let res = lp.run(
-            stream
-                .map(|_| ())
-                .or_else(|e| {
-                    error!("Error: {:?}", e);
-                    Ok(()) as Result<(), ()>
-                })
-                .for_each(|_| Ok(()))
-                .into_future(),
-        );
-
-        res.unwrap();
-    });
-
-    discord_bot.with_framework(
-        StandardFramework::new()
-            .configure(|c| c.prefix("/"))
-            .on("channel_id", channel_id)
-            .on("ping", dc_ping),
-    );
-
-    // Starts handling messages from Discord
-    discord_bot.start().unwrap();
-
-    tg_thread.join().unwrap();
-    dc_thread.join().unwrap();
+    tg_supervisor.join().unwrap();
+    dc_sender_supervisor.join().unwrap();
+    dc_bot_supervisor.join().unwrap();
 }
 
 command!(dc_ping(_context, message) {

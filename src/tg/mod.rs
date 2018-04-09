@@ -20,5 +20,5 @@ mod functions;
 mod download;
 pub mod discord;
 
-pub use self::message::{Message, MessageContent, FileMessage, FileKind};
+pub use self::message::{FileKind, FileMessage, Message, MessageContent};
 pub use self::functions::handle_forward;

@@ -48,10 +48,10 @@ fn send_text(bot: &RcBot, user: &str, chat_id: Integer, content: &str) {
     bot.inner.handle.spawn(
         bot.message(chat_id, {
             // Escape content that could be mistaken for HTML tags.
-            let escaped_content = content.replace("&", "&amp;").replace(">", "&gt;").replace(
-                "<",
-                "&lt;",
-            );
+            let escaped_content = content
+                .replace("&", "&amp;")
+                .replace(">", "&gt;")
+                .replace("<", "&lt;");
             format!("<b>{}</b>: {}", user, escaped_content)
         }).parse_mode("HTML")
             .send()

@@ -41,23 +41,23 @@ impl Handler {
     }
 
     /// Handles regular chat messages, such as people sending text or files.
-    fn regular_message(&self, _: Context, message: model::Message) {
+    fn regular_message(&self, _: Context, message: model::channel::Message) {
         telegram::regular_message(&self.config, self.tg_sender.clone(), message);
     }
 
     /// Handles messages indicating a user has Joined the chat.
-    fn join_message(&self, _: Context, message: &model::Message) {
+    fn join_message(&self, _: Context, message: &model::channel::Message) {
         telegram::join_message(message);
     }
 }
 
 impl EventHandler for Handler {
-    fn on_message(&self, ctx: Context, message: model::Message) {
+    fn message(&self, ctx: Context, message: model::channel::Message) {
         match message.kind {
-            model::MessageType::Regular => {
+            model::channel::MessageType::Regular => {
                 self.regular_message(ctx, message);
             }
-            model::MessageType::MemberJoin => {
+            model::channel::MessageType::MemberJoin => {
                 self.join_message(ctx, &message);
             }
             _ => {}
